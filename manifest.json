@@ -1,0 +1,27 @@
+{
+    "manifest_version": 3,
+    "name": "Peter Marker",
+    "description": "Draw over any webpage with a smartboard-style pen",
+    "version": "1.0",
+    "permissions": [
+        "activeTab",
+        "scripting"
+    ],
+    "action": {
+        "default_icon": "icons/pen48.png"
+    },
+    "icons": {
+        "48": "icons/pen48.png"
+    },
+    "content_scripts": [
+        {
+            "matches": ["<all_urls>"],
+            "css": ["styles.css"],
+            "js": ["content.js"]
+        }
+    ],
+    "web_accessible_resources": [{
+        "resources": ["icons/pen48.png"],
+        "matches": ["<all_urls>"]
+    }]
+}
