@@ -324,12 +324,17 @@ canvas.addEventListener('mousemove', draw);
 canvas.addEventListener('mouseup', stopDrawing);
 canvas.addEventListener('mouseout', stopDrawing);
 
-// On esc close pen
+// On esc close pen and other keys
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
+    if (e.key === 'Escape' || 
+        e.key === 'ArrowLeft' || 
+        e.key === 'ArrowRight' || 
+        e.key === 'ArrowUp' || 
+        e.key === 'ArrowDown' ||
+        e.key === 'PageUp' ||
+        e.key === 'PageDown') {
 
         isEnabled = false;
-
         closePen();
     }
 });
