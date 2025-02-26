@@ -37,7 +37,7 @@ const toolbarContainer = document.createElement('div');
 toolbarContainer.style.cssText = `
     position: fixed;
     bottom: 20px;
-    right: 80px;
+    right: 75px;
     display: flex;
     align-items: center;
     gap: 10px;
