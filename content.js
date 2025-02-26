@@ -282,7 +282,21 @@ toolbarContainer.querySelector('#pen').addEventListener('click', () => {
     toolbarContainer.querySelector('#pen').style.background = isEnabled ? 'rgba(255, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.5)';
 });
 
+toolbarContainer.querySelector('#pen').addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    isEnabled = !isEnabled;
+    isErasing = false;
+    toggleToolbar();
+    toolbarContainer.querySelector('#pen').style.background = isEnabled ? 'rgba(255, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.5)';
+});
+
 toolbarContainer.querySelector('#eraser').addEventListener('click', () => {
+    isErasing = !isErasing;
+    toolbarContainer.querySelector('#eraser').style.background = isErasing ? 'rgba(255, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.5)';
+});
+
+toolbarContainer.querySelector('#eraser').addEventListener('touchstart', (e) => {
+    e.preventDefault();
     isErasing = !isErasing;
     toolbarContainer.querySelector('#eraser').style.background = isErasing ? 'rgba(255, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.5)';
 });
@@ -321,6 +335,10 @@ window.addEventListener('resize', resizeCanvas);
 
 // Mouse events
 penIcon.addEventListener('click', toggleDrawing);
+penIcon.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    toggleDrawing();
+});
 canvas.addEventListener('mousedown', startDrawing);
 canvas.addEventListener('mousemove', draw);
 canvas.addEventListener('mouseup', stopDrawing);
