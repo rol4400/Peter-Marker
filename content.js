@@ -318,11 +318,28 @@ toolbarContainer.querySelector('#eraser').addEventListener('click', () => {
 // });
 
 window.addEventListener('resize', resizeCanvas);
+
+// Mouse events
 penIcon.addEventListener('click', toggleDrawing);
 canvas.addEventListener('mousedown', startDrawing);
 canvas.addEventListener('mousemove', draw);
 canvas.addEventListener('mouseup', stopDrawing);
 canvas.addEventListener('mouseout', stopDrawing);
+
+// Touch events
+// Touch events
+canvas.addEventListener("touchstart", (e) => {
+    e.preventDefault(); // Prevent scrolling
+    startDrawing(e.touches[0]); // Pass the first touch point
+});
+
+canvas.addEventListener("touchmove", (e) => {
+e.preventDefault();
+draw(e.touches[0]);
+});
+
+canvas.addEventListener("touchend", stopDrawing);
+  canvas.addEventListener("touchcancel", stopDrawing);
 
 // On esc close pen and other keys
 document.addEventListener('keydown', (e) => {
