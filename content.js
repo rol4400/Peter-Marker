@@ -153,7 +153,7 @@ function startDrawing(e) {
 
 function draw(e) {
     if (!isDrawing || !isEnabled) return;
-    ctx.lineWidth = isErasing ? 50 : 5;
+    ctx.lineWidth = isErasing ? 100 : 5;
     ctx.lineCap = 'round';
     
     if (isErasing) {
@@ -301,36 +301,6 @@ toolbarContainer.querySelector('#eraser').addEventListener('touchstart', (e) => 
     toolbarContainer.querySelector('#eraser').style.background = isErasing ? 'rgba(255, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.5)';
 });
 
-// toolbarContainer.querySelector('#undo').addEventListener('click', () => {
-//     loadState(currentHistoryIndex - 1);
-// });
-
-// toolbarContainer.querySelector('#redo').addEventListener('click', () => {
-//     loadState(currentHistoryIndex + 1);
-// });
-
-// toolbarContainer.querySelector('#prevSlide').addEventListener('click', () => {
-//     const leftArrow = new KeyboardEvent('keydown', {
-//         key: 'ArrowLeft',
-//         keyCode: 37,
-//         code: 'ArrowLeft',
-//         bubbles: true,
-//         cancelable: true
-//     });
-//     document.dispatchEvent(leftArrow);
-// });
-
-// toolbarContainer.querySelector('#nextSlide').addEventListener('click', () => {
-//     const rightArrow = new KeyboardEvent('keydown', {
-//         key: 'ArrowRight',
-//         keyCode: 39,
-//         code: 'ArrowRight',
-//         bubbles: true,
-//         cancelable: true
-//     });
-//     document.dispatchEvent(rightArrow);
-// });
-
 window.addEventListener('resize', resizeCanvas);
 
 // Mouse events
@@ -396,3 +366,19 @@ colorPicker.value = penColor;
 penIcon.style.background = 'rgba(0, 0, 0, 0.5)';
 toolbarContainer.querySelector('#pen').style.background = 'rgba(0, 0, 0, 0.5)';
 toolbarContainer.querySelector('#color').style.background = penColor;
+
+// Delete any page swipe to stop ppl from swyping to the next page when drawing
+// Prevent swipe navigation when drawing
+canvas.addEventListener('touchstart', (e) => {
+    if (isEnabled) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+    if (isEnabled) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+}, { passive: false });
