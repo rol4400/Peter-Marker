@@ -1,3 +1,9 @@
+// Check if we're on YouTube and exit early if so
+const isYouTube = window.location.hostname.includes('youtube.com') || window.location.hostname.includes('youtu.be');
+if (isYouTube) {
+    console.log('Peter Marker: Disabled on YouTube');
+} else {
+
 // Create and inject the pen icon
 const penIcon = document.createElement('div');
 penIcon.innerHTML = `
@@ -38,14 +44,15 @@ eraserCursor.style.cssText = `
     position: fixed;
     width: 100px;
     height: 100px;
-    border: 2px solid rgba(255, 255, 255, 0.8);
     border-radius: 50%;
     pointer-events: none;
     z-index: 2147483648;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(2px);
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(4px);
     transform: translate(-50%, -50%);
     display: none;
+    border: 2px solid white;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 `;
 
 // Create and inject the toolbar container
@@ -118,6 +125,17 @@ function updateColorPickerPosition() {
     colorPicker.style.top = `${colorBtnRect.top}px`;
 }
 
+// Function to properly close the color picker
+function closeColorPicker() {
+    colorPicker.style.opacity = '0';
+    
+    // Close it by toggling the input type
+    colorPicker.type = 'text'; // Temporarily change type to text
+    setTimeout(() => {
+        colorPicker.type = 'color'; // Change back to color
+    }, 50);
+}
+
 // Function to handle clicks/touches outside color picker
 function handleOutsideClick(e) {
     // Check if color picker is visible (opacity = 1)
@@ -127,10 +145,9 @@ function handleOutsideClick(e) {
     const colorBtn = toolbarContainer.querySelector('#color');
     const isColorButton = colorBtn.contains(e.target) || e.target === colorBtn;
     const isColorPicker = colorPicker.contains(e.target) || e.target === colorPicker;
-    
-    // Don't close if clicking on color button or color picker itself
+      // Don't close if clicking on color button or color picker itself
     if (!isColorButton && !isColorPicker) {
-        colorPicker.style.opacity = '0';
+        closeColorPicker();
     }
 }
 
@@ -181,12 +198,18 @@ function startDrawing(e) {
     isDrawing = true;
     ctx.beginPath();
     ctx.moveTo(e.clientX, e.clientY);
+
+    // Close the color picker if it is open
+    closeColorPicker();
 }
 
 function draw(e) {
     if (!isDrawing || !isEnabled) return;
     ctx.lineWidth = isErasing ? 100 : 5;
-    ctx.lineCap = 'round';
+    ctx.lineCap = 'round';    // Close the color picker if it is open
+    if (colorPicker.style.opacity === '1') {
+        closeColorPicker();
+    }
     
     if (isErasing) {
         ctx.globalCompositeOperation = 'destination-out';
@@ -272,11 +295,10 @@ function closePen() {
     const buttons = toolbarContainer.children;
     for (let i = 1; i < buttons.length; i++) {
         buttons[i].style.transform = 'scale(0)';
-    }    // Turn off eraser
-    isErasing = false;
+    }    // Turn off eraser    isErasing = false;
     toolbarContainer.querySelector('#eraser').style.background = 'rgba(0, 0, 0, 0.5)';
     toolbarContainer.querySelector('#pen').style.background = 'rgba(0, 0, 0, 0.5)';    // Hide color picker and eraser cursor
-    colorPicker.style.opacity = '0';
+    closeColorPicker();
     colorPicker.style.pointerEvents = 'none';
     colorPicker.style.left = '-100px';
     colorPicker.style.top = '-100px';
@@ -318,7 +340,7 @@ function openPen() {
     }, 1000);
 }
 
-// Initialize
+// Initialize only if not on YouTube
 let isErasing = false;
 document.body.appendChild(toolbarContainer);
 document.body.appendChild(canvas);
@@ -339,15 +361,19 @@ document.addEventListener('mousedown', (e) => {
 });
 
 document.addEventListener('touchstart', (e) => {
-    // Use setTimeout to prevent interference with color picker opening
-    setTimeout(() => {
-        const colorBtn = toolbarContainer.querySelector('#color');
-        const isColorButtonArea = colorBtn.contains(e.target) || e.target === colorBtn || colorPicker.contains(e.target) || e.target === colorPicker;
-        
-        if (!isColorButtonArea) {
-            handleOutsideClick(e);
-        }
-    }, 50);
+    // Check immediately for touch events (no setTimeout delay)
+    const colorBtn = toolbarContainer.querySelector('#color');
+    const isColorButtonArea = colorBtn.contains(e.target) || e.target === colorBtn || colorPicker.contains(e.target) || e.target === colorPicker;
+    const isCanvas = e.target === canvas || canvas.contains(e.target);
+      // If touching canvas and color picker is open, close it IMMEDIATELY
+    if (isCanvas && colorPicker.style.opacity === '1') {
+        closeColorPicker();
+        console.log('Color picker closed by document touchstart on canvas'); // Debug log
+    }
+    
+    if (!isColorButtonArea) {
+        handleOutsideClick(e);
+    }
 });
 
 // Event listeners
@@ -383,6 +409,45 @@ toolbarContainer.querySelector('#eraser').addEventListener('touchstart', (e) => 
     if (!isErasing) {
         eraserCursor.style.display = 'none';
     }
+});
+
+// Add click handler for color button to toggle color picker
+toolbarContainer.querySelector('#color').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (colorPicker.style.opacity === '1') {
+        // Close if already open
+        closeColorPicker();
+    } else {
+        // Open if closed - also disable eraser mode
+        isErasing = false;
+        toolbarContainer.querySelector('#eraser').style.background = 'rgba(0, 0, 0, 0.5)';
+        eraserCursor.style.display = 'none';
+        
+        colorPicker.style.opacity = '1';
+        updateColorPickerPosition();
+    }
+});
+
+// Add touch handler for color button
+toolbarContainer.querySelector('#color').addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Add a small delay to ensure the color picker state is stable
+    setTimeout(() => {
+        if (colorPicker.style.opacity === '1') {
+            // Close if already open
+            closeColorPicker();
+        } else {
+            // Open if closed - also disable eraser mode
+            isErasing = false;
+            toolbarContainer.querySelector('#eraser').style.background = 'rgba(0, 0, 0, 0.5)';
+            eraserCursor.style.display = 'none';
+            
+            colorPicker.style.opacity = '1';
+            updateColorPickerPosition();
+        }
+    }, 10);
 });
 
 window.addEventListener('resize', resizeCanvas);
@@ -435,24 +500,49 @@ document.addEventListener('mouseup', (e) => {
 // Touch events
 // Touch events
 canvas.addEventListener("touchstart", (e) => {
-    e.preventDefault(); // Prevent scrolling
+    if (!isEnabled) return;
+      e.preventDefault(); // Prevent scrolling
+    
+    // IMMEDIATELY close the color picker if it is open (for touch events)
+    if (colorPicker.style.opacity === '1') {
+        closeColorPicker();
+        console.log('Color picker closed by touchstart'); // Debug log
+    }
+    
     startDrawing(e.touches[0]); // Pass the first touch point
 });
 
 canvas.addEventListener("touchmove", (e) => {
     e.preventDefault();
     const touch = e.touches[0];
+      // Also close color picker on touch move (redundant safety)
+    if (colorPicker.style.opacity === '1') {
+        closeColorPicker();
+        console.log('Color picker closed by touchmove'); // Debug log
+    }
     
-    // Show eraser cursor for touch
-    if (isEnabled && isErasing) {
+    // Determine if it's a palm touch based on touch radius
+    const isPalmTouch = (touch.radiusX > 20 || touch.radiusY > 20);
+    
+    // Temporarily set isErasing for palm touches
+    const wasErasing = isErasing;
+    if (isPalmTouch) {
+        isErasing = true;
         eraserCursor.style.display = 'block';
         eraserCursor.style.left = touch.clientX + 'px';
         eraserCursor.style.top = touch.clientY + 'px';
-    } else if (!isErasing || !isEnabled) {
+    } else if (isEnabled && isErasing) {
+        eraserCursor.style.display = 'block';
+        eraserCursor.style.left = touch.clientX + 'px';
+        eraserCursor.style.top = touch.clientY + 'px';
+    } else {
         eraserCursor.style.display = 'none';
     }
     
     draw(touch);
+    
+    // Restore original erasing state
+    isErasing = wasErasing;
 });
 
 canvas.addEventListener("touchend", stopDrawing);
@@ -495,9 +585,7 @@ document.addEventListener('keydown', (e) => {
         e.key === 'ArrowUp' || 
         e.key === 'ArrowDown' ||
         e.key === 'PageUp' ||
-        e.key === 'PageDown') {
-
-        isEnabled = false;
+        e.key === 'PageDown') {        isEnabled = false;
         closePen();
     }
 });
@@ -541,3 +629,4 @@ canvas.addEventListener('touchmove', (e) => {
     }
 }, { passive: false });
 
+} // End of YouTube check - only run Peter Marker if not on YouTube
