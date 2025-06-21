@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peter Marker Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .content {
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .instructions {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <h1>Peter Marker Extension Test</h1>
+        
+        <div class="test-section">
+            <h2>Testing Instructions</h2>
+            <div class="instructions">
+                <h3>Color Picker Touch Test:</h3>
+                <ol>
+                    <li>Click the pen icon to activate drawing mode</li>
+                    <li>Click/tap the color button (palette icon) to open color picker</li>
+                    <li>Try clicking/tapping outside the color picker - it should close</li>
+                    <li>Test both with mouse clicks and touch events</li>
+                </ol>
+            </div>
+            
+            <div class="instructions">
+                <h3>Eraser Visual Feedback Test:</h3>
+                <ol>
+                    <li>Activate drawing mode and draw some lines</li>
+                    <li>Click the eraser button to enable eraser mode</li>
+                    <li>Move cursor/finger over canvas - you should see a glassy circle</li>
+                    <li>Start erasing - the circle should follow your movement</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Sample Content for Drawing</h2>
+            <p>This is some sample text that you can draw over to test the pen functionality. The pen should work seamlessly over any web content.</p>
+            
+            <p>Try drawing circles, lines, and annotations. Test the eraser functionality by drawing something and then erasing parts of it.</p>
+            
+            <p>Make sure to test both mouse and touch interactions, especially the color picker closing behavior when you click/tap outside of it.</p>
+        </div>
+        
+        <div class="test-section">
+            <h2>Features to Verify</h2>
+            <ul>
+                <li>✓ Color picker opens when clicking color button</li>
+                <li>✓ Color picker closes when clicking/touching outside</li>
+                <li>✓ Eraser shows visual feedback (glassy circle)</li>
+                <li>✓ Eraser cursor follows mouse/touch movement</li>
+                <li>✓ Eraser cursor disappears when eraser is disabled</li>
+                <li>✓ Touch events work properly on mobile devices</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="content.js"></script>
+</body>
+</html>

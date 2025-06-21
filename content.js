@@ -32,6 +32,22 @@ canvas.style.cssText = `
     z-index: 2147483646;
 `;
 
+// Create eraser cursor overlay
+const eraserCursor = document.createElement('div');
+eraserCursor.style.cssText = `
+    position: fixed;
+    width: 100px;
+    height: 100px;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 2147483648;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(2px);
+    transform: translate(-50%, -50%);
+    display: none;
+`;
+
 // Create and inject the toolbar container
 const toolbarContainer = document.createElement('div');
 toolbarContainer.style.cssText = `
@@ -102,6 +118,22 @@ function updateColorPickerPosition() {
     colorPicker.style.top = `${colorBtnRect.top}px`;
 }
 
+// Function to handle clicks/touches outside color picker
+function handleOutsideClick(e) {
+    // Check if color picker is visible (opacity = 1)
+    const isColorPickerVisible = colorPicker.style.opacity === '1';
+    if (!isColorPickerVisible) return;
+    
+    const colorBtn = toolbarContainer.querySelector('#color');
+    const isColorButton = colorBtn.contains(e.target) || e.target === colorBtn;
+    const isColorPicker = colorPicker.contains(e.target) || e.target === colorPicker;
+    
+    // Don't close if clicking on color button or color picker itself
+    if (!isColorButton && !isColorPicker) {
+        colorPicker.style.opacity = '0';
+    }
+}
+
 // Update position when window resizes
 window.addEventListener('resize', updateColorPickerPosition);
 
@@ -121,7 +153,7 @@ observer.observe(toolbarContainer.querySelector('#color'), {
 
 updateColorPickerPosition();
 
-var penColor = "red";
+var penColor = "#ff0000";
 colorPicker.addEventListener('input', () => {
     penColor = colorPicker.value;
 
@@ -158,9 +190,15 @@ function draw(e) {
     
     if (isErasing) {
         ctx.globalCompositeOperation = 'destination-out';
+        // Show eraser cursor
+        eraserCursor.style.display = 'block';
+        eraserCursor.style.left = e.clientX + 'px';
+        eraserCursor.style.top = e.clientY + 'px';
     } else {
         ctx.globalCompositeOperation = 'source-over';
         ctx.strokeStyle = penColor;
+        // Hide eraser cursor
+        eraserCursor.style.display = 'none';
     }
     
     ctx.lineTo(e.clientX, e.clientY);
@@ -171,6 +209,8 @@ function stopDrawing() {
     if (isDrawing) {
         isDrawing = false;
         saveCurrentState();
+        // Hide eraser cursor when stopping drawing
+        eraserCursor.style.display = 'none';
     }
 }
 
@@ -232,12 +272,14 @@ function closePen() {
     const buttons = toolbarContainer.children;
     for (let i = 1; i < buttons.length; i++) {
         buttons[i].style.transform = 'scale(0)';
-    }
-
-    // Turn off eraser
+    }    // Turn off eraser
     isErasing = false;
     toolbarContainer.querySelector('#eraser').style.background = 'rgba(0, 0, 0, 0.5)';
     toolbarContainer.querySelector('#pen').style.background = 'rgba(0, 0, 0, 0.5)';
+
+    // Hide color picker and eraser cursor
+    colorPicker.style.opacity = '0';
+    eraserCursor.style.display = 'none';
 
     // Change the pen icon back to normal
     penIcon.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="pointer-events: none;">
@@ -272,7 +314,33 @@ function openPen() {
 let isErasing = false;
 document.body.appendChild(toolbarContainer);
 document.body.appendChild(canvas);
+document.body.appendChild(eraserCursor);
 resizeCanvas();
+
+// Event listeners for outside clicks/touches to close color picker
+document.addEventListener('mousedown', (e) => {
+    // Use setTimeout to prevent interference with color picker opening
+    setTimeout(() => {
+        const colorBtn = toolbarContainer.querySelector('#color');
+        const isColorButtonArea = colorBtn.contains(e.target) || e.target === colorBtn || colorPicker.contains(e.target) || e.target === colorPicker;
+        
+        if (!isColorButtonArea) {
+            handleOutsideClick(e);
+        }
+    }, 50);
+});
+
+document.addEventListener('touchstart', (e) => {
+    // Use setTimeout to prevent interference with color picker opening
+    setTimeout(() => {
+        const colorBtn = toolbarContainer.querySelector('#color');
+        const isColorButtonArea = colorBtn.contains(e.target) || e.target === colorBtn || colorPicker.contains(e.target) || e.target === colorPicker;
+        
+        if (!isColorButtonArea) {
+            handleOutsideClick(e);
+        }
+    }, 50);
+});
 
 // Event listeners
 toolbarContainer.querySelector('#pen').addEventListener('click', () => {
@@ -293,12 +361,20 @@ toolbarContainer.querySelector('#pen').addEventListener('touchstart', (e) => {
 toolbarContainer.querySelector('#eraser').addEventListener('click', () => {
     isErasing = !isErasing;
     toolbarContainer.querySelector('#eraser').style.background = isErasing ? 'rgba(255, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.5)';
+    // Hide eraser cursor when toggling off
+    if (!isErasing) {
+        eraserCursor.style.display = 'none';
+    }
 });
 
 toolbarContainer.querySelector('#eraser').addEventListener('touchstart', (e) => {
     e.preventDefault();
     isErasing = !isErasing;
     toolbarContainer.querySelector('#eraser').style.background = isErasing ? 'rgba(255, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.5)';
+    // Hide eraser cursor when toggling off
+    if (!isErasing) {
+        eraserCursor.style.display = 'none';
+    }
 });
 
 window.addEventListener('resize', resizeCanvas);
@@ -309,10 +385,44 @@ penIcon.addEventListener('touchstart', (e) => {
     e.preventDefault();
     toggleDrawing();
 });
+
+// Add mouse move listener for eraser cursor
+canvas.addEventListener('mousemove', (e) => {
+    if (isEnabled && isErasing && !isDrawing) {
+        eraserCursor.style.display = 'block';
+        eraserCursor.style.left = e.clientX + 'px';
+        eraserCursor.style.top = e.clientY + 'px';
+    } else if (!isErasing || !isEnabled) {
+        eraserCursor.style.display = 'none';
+    }
+    
+    // Call existing draw function
+    draw(e);
+});
+
 canvas.addEventListener('mousedown', startDrawing);
-canvas.addEventListener('mousemove', draw);
 canvas.addEventListener('mouseup', stopDrawing);
 canvas.addEventListener('mouseout', stopDrawing);
+
+// Add document-level mouse events to continue drawing when mouse moves outside canvas/browser
+document.addEventListener('mousemove', (e) => {
+    if (isDrawing && isEnabled) {
+        // Show eraser cursor for mouse
+        if (isErasing) {
+            eraserCursor.style.display = 'block';
+            eraserCursor.style.left = e.clientX + 'px';
+            eraserCursor.style.top = e.clientY + 'px';
+        }
+        
+        draw(e);
+    }
+});
+
+document.addEventListener('mouseup', (e) => {
+    if (isDrawing && isEnabled) {
+        stopDrawing();
+    }
+});
 
 // Touch events
 // Touch events
@@ -322,12 +432,52 @@ canvas.addEventListener("touchstart", (e) => {
 });
 
 canvas.addEventListener("touchmove", (e) => {
-e.preventDefault();
-draw(e.touches[0]);
+    e.preventDefault();
+    const touch = e.touches[0];
+    
+    // Show eraser cursor for touch
+    if (isEnabled && isErasing) {
+        eraserCursor.style.display = 'block';
+        eraserCursor.style.left = touch.clientX + 'px';
+        eraserCursor.style.top = touch.clientY + 'px';
+    } else if (!isErasing || !isEnabled) {
+        eraserCursor.style.display = 'none';
+    }
+    
+    draw(touch);
 });
 
 canvas.addEventListener("touchend", stopDrawing);
-  canvas.addEventListener("touchcancel", stopDrawing);
+canvas.addEventListener("touchcancel", stopDrawing);
+
+// Add document-level touch events to continue drawing when finger moves outside canvas/browser
+document.addEventListener("touchmove", (e) => {
+    if (isDrawing && isEnabled) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        
+        // Show eraser cursor for touch
+        if (isErasing) {
+            eraserCursor.style.display = 'block';
+            eraserCursor.style.left = touch.clientX + 'px';
+            eraserCursor.style.top = touch.clientY + 'px';
+        }
+        
+        draw(touch);
+    }
+}, { passive: false });
+
+document.addEventListener("touchend", (e) => {
+    if (isDrawing && isEnabled) {
+        stopDrawing();
+    }
+});
+
+document.addEventListener("touchcancel", (e) => {
+    if (isDrawing && isEnabled) {
+        stopDrawing();
+    }
+});
 
 // On esc close pen and other keys
 document.addEventListener('keydown', (e) => {
