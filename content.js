@@ -275,10 +275,11 @@ function closePen() {
     }    // Turn off eraser
     isErasing = false;
     toolbarContainer.querySelector('#eraser').style.background = 'rgba(0, 0, 0, 0.5)';
-    toolbarContainer.querySelector('#pen').style.background = 'rgba(0, 0, 0, 0.5)';
-
-    // Hide color picker and eraser cursor
+    toolbarContainer.querySelector('#pen').style.background = 'rgba(0, 0, 0, 0.5)';    // Hide color picker and eraser cursor
     colorPicker.style.opacity = '0';
+    colorPicker.style.pointerEvents = 'none';
+    colorPicker.style.left = '-100px';
+    colorPicker.style.top = '-100px';
     eraserCursor.style.display = 'none';
 
     // Change the pen icon back to normal
@@ -302,12 +303,19 @@ function openPen() {
 
     penIcon.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="pointer-events: none;">
         <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-    </svg>`;
-
-    // Wait 1 second and run updateColorPickerPosition to fix the color picker position
-    setTimeout(updateColorPickerPosition, 350);
-    setTimeout(updateColorPickerPosition, 500);
-    setTimeout(updateColorPickerPosition, 1000);
+    </svg>`;    // Wait 1 second and run updateColorPickerPosition to fix the color picker position
+    setTimeout(() => {
+        updateColorPickerPosition();
+        colorPicker.style.pointerEvents = 'auto';
+    }, 350);
+    setTimeout(() => {
+        updateColorPickerPosition();
+        colorPicker.style.pointerEvents = 'auto';
+    }, 500);
+    setTimeout(() => {
+        updateColorPickerPosition();
+        colorPicker.style.pointerEvents = 'auto';
+    }, 1000);
 }
 
 // Initialize
@@ -532,3 +540,4 @@ canvas.addEventListener('touchmove', (e) => {
         e.stopPropagation();
     }
 }, { passive: false });
+
