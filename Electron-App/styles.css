@@ -1,0 +1,124 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: transparent;
+    -webkit-app-region: no-drag;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+#penIcon {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 10px;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 2147483647;
+    color: white;
+    font-size: 14px;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 0px;
+    transition: background 0.3s ease;
+}
+
+#penIcon:hover {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+#canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2147483645;
+    cursor: crosshair;
+}
+
+#canvas.active {
+    pointer-events: auto;
+    cursor: crosshair;
+}
+
+#eraserCursor {
+    position: fixed;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 2147483648;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transform: translate(-50%, -50%);
+    display: none;
+    border: 2px solid white;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+#toolbarContainer {
+    position: fixed;
+    bottom: 20px;
+    right: 75px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+    z-index: 2147483647;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 0px;
+}
+
+#toolbarContainer > div {
+    background: rgba(0, 0, 0, 0.5);
+    padding: 10px;
+    border-radius: 50%;
+    cursor: pointer;
+    color: white;
+    transform: scale(0);
+    transition: transform 0.3s ease, background 0.3s ease;
+    font-size: 14px;
+    line-height: 0px;
+}
+
+#toolbarContainer > div:hover {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+#colorPicker {
+    position: fixed;
+    z-index: 2147483644;
+    width: 44px;
+    height: 44px;
+    padding: 0px;
+    border: none;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+#colorPicker::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+#colorPicker::-webkit-color-swatch {
+    border: none;
+    border-radius: 50%;
+}
+
+/* Show scale animation when enabled */
+.toolbar-visible {
+    transform: scale(1) !important;
+}
