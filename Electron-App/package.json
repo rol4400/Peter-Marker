@@ -19,6 +19,10 @@
   ],
   "author": "Peter Marker",
   "license": "MIT",
+  "dependencies": {
+    "electron-updater": "^6.1.7",
+    "electron-log": "^5.0.1"
+  },
   "devDependencies": {
     "electron": "^28.0.0",
     "electron-builder": "^24.9.1"
@@ -26,11 +30,22 @@
   "build": {
     "appId": "com.petermarker.desktop",
     "productName": "Peter Marker",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "rol4400",
+        "repo": "Peter-Marker"
+      }
+    ],
     "mac": {
       "category": "public.app-category.productivity",
       "target": [
         {
           "target": "dmg",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "zip",
           "arch": ["x64", "arm64"]
         }
       ],
@@ -38,7 +53,10 @@
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "entitlements": "entitlements.mac.plist",
-      "entitlementsInherit": "entitlements.mac.plist"
+      "entitlementsInherit": "entitlements.mac.plist",
+      "signIgnore": [
+        "node_modules/electron-updater"
+      ]
     },
     "win": {
       "target": [
@@ -54,7 +72,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Peter Marker"
+      "shortcutName": "Peter Marker",
+      "differentialPackage": true
     },
     "files": [
       "main.js",

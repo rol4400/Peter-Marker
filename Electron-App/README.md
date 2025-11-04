@@ -12,6 +12,8 @@ A desktop annotation tool for Mac and Windows that allows teachers to draw over 
 - 🚀 **Auto-start** - Launches automatically on system startup (Mac)
 - 🎯 **System tray** - Easy access from menu bar/system tray
 - ⌨️ **Keyboard shortcuts** - Quick toggle with keyboard shortcuts
+- 🔄 **Automatic updates** - Stay up-to-date with the latest features via GitHub releases
+- 🖥️ **Multi-monitor support** - Pen follows your cursor across multiple displays
 
 ## Installation
 
@@ -120,6 +122,11 @@ After installation, Peter Marker will:
    - Right-click the tray/menu bar icon
    - Select "Clear Canvas"
 
+6. **Check for Updates**:
+   - Right-click the tray/menu bar icon
+   - Select "Check for Updates"
+   - App also checks automatically on startup
+
 ### Keyboard Shortcuts
 
 - `Cmd/Ctrl + Shift + D` - Toggle drawing mode
@@ -190,6 +197,7 @@ Electron-App/
 
 - **Electron**: Desktop application framework
 - **electron-builder**: Packaging and distribution
+- **electron-updater**: Automatic updates via GitHub releases
 - **HTML5 Canvas**: Drawing functionality
 - **System Tray/Menu Bar**: Native OS integration
 
@@ -200,6 +208,22 @@ Electron-App/
 3. **System Tray**: Uses Electron's `Tray` API for menu bar/system tray integration
 4. **Auto-start**: Uses `app.setLoginItemSettings()` on Mac
 5. **Global Shortcuts**: Uses `globalShortcut` API for keyboard shortcuts
+6. **Auto-updates**: Uses electron-updater to check and install updates from GitHub releases
+7. **Multi-monitor**: Uses Electron's `screen` API to track cursor position across displays
+
+## Documentation
+
+Detailed documentation is available in the following files:
+
+- **[AUTO_UPDATE.md](AUTO_UPDATE.md)** - Automatic update setup and publishing releases
+- **[MULTI_MONITOR.md](MULTI_MONITOR.md)** - Multi-monitor support details
+- **[FULLSCREEN_HANDLING.md](FULLSCREEN_HANDLING.md)** - Fullscreen positioning behavior
+- **[CLICK_THROUGH_FIX.md](CLICK_THROUGH_FIX.md)** - Click-through implementation details
+- **[QUICKSTART.md](QUICKSTART.md)** - Quick 3-step setup guide
+- **[GETTING_STARTED.md](GETTING_STARTED.md)** - Detailed setup checklist
+- **[BUILD_CHECKLIST.md](BUILD_CHECKLIST.md)** - Production build guide
+- **[SETUP_ICONS.md](SETUP_ICONS.md)** - Icon setup instructions
+- **[PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)** - Technical overview
 
 ## Contributing
 

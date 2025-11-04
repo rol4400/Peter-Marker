@@ -1,9 +1,16 @@
 const { app, BrowserWindow, Tray, Menu, screen, ipcMain, globalShortcut } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
 
 let mainWindow;
 let tray;
 let isDrawingEnabled = false;
+
+// Configure auto-updater
+autoUpdater.logger = require('electron-log');
+autoUpdater.logger.transports.file.level = 'info';
+autoUpdater.autoDownload = false; // Don't auto-download, let user decide
+autoUpdater.autoInstallOnAppQuit = true;
 
 function createWindow() {
     // Get primary display for initial window creation
@@ -142,6 +149,11 @@ function updateTrayMenu() {
         },
         { type: 'separator' },
         {
+            label: 'Check for Updates',
+            click: () => checkForUpdates()
+        },
+        { type: 'separator' },
+        {
             label: 'Quit Peter Marker',
             click: () => {
                 app.isQuitting = true;
@@ -223,12 +235,81 @@ ipcMain.on('forward-key', (event, keyCode) => {
     }
 });
 
+// Auto-updater event handlers
+autoUpdater.on('checking-for-update', () => {
+    console.log('Checking for update...');
+});
+
+autoUpdater.on('update-available', (info) => {
+    console.log('Update available:', info.version);
+    if (mainWindow) {
+        const response = require('electron').dialog.showMessageBoxSync(mainWindow, {
+            type: 'info',
+            title: 'Update Available',
+            message: `A new version (${info.version}) is available. Would you like to download it now?`,
+            buttons: ['Download', 'Later'],
+            defaultId: 0
+        });
+        
+        if (response === 0) {
+            autoUpdater.downloadUpdate();
+        }
+    }
+});
+
+autoUpdater.on('update-not-available', () => {
+    console.log('No updates available');
+    if (mainWindow) {
+        require('electron').dialog.showMessageBoxSync(mainWindow, {
+            type: 'info',
+            title: 'No Updates',
+            message: 'You are running the latest version of Peter Marker.',
+            buttons: ['OK']
+        });
+    }
+});
+
+autoUpdater.on('error', (err) => {
+    console.error('Update error:', err);
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+    let message = `Download speed: ${progressObj.bytesPerSecond} - Downloaded ${progressObj.percent}%`;
+    console.log(message);
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+    console.log('Update downloaded:', info.version);
+    if (mainWindow) {
+        const response = require('electron').dialog.showMessageBoxSync(mainWindow, {
+            type: 'info',
+            title: 'Update Ready',
+            message: `Version ${info.version} has been downloaded. Restart the application to install the update.`,
+            buttons: ['Restart Now', 'Later'],
+            defaultId: 0
+        });
+        
+        if (response === 0) {
+            autoUpdater.quitAndInstall();
+        }
+    }
+});
+
+function checkForUpdates() {
+    autoUpdater.checkForUpdates();
+}
+
 app.whenReady().then(() => {
     createWindow();
     createTray();
     
     // Start tracking mouse to follow active display
     startMouseTracking();
+    
+    // Check for updates on startup (after a delay to not slow down launch)
+    setTimeout(() => {
+        autoUpdater.checkForUpdatesAndNotify();
+    }, 3000);
     
     // Register global shortcut only for toggle (Cmd/Ctrl + Shift + D)
     globalShortcut.register('CommandOrControl+Shift+D', () => {
