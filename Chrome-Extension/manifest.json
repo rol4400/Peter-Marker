@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "Peter Marker",
     "description": "Draw over any webpage with a smartboard-style pen. Currently there are many smartboard and touch style screens that offer marker addons for powerpoint or other applications, however if you use Canva, Apple Keynote, or just any web based PDFs or other pages it is difficult to find a consistent and simple way to draw on the slides or pages from a touch board. Peter Marker offers a simple but functional solution, rendering a pen icon on the bottom right hand of the browser. Tapping the pen activates the drawing and gives you the option to change colour, erase, and clear screen. Clicking 'next slide' with a powerpoint clicker will also automatically clear the screen as the slide changes.",
-    "version": "1.0",    
+    "version": "1.0.0",    
     "permissions": [
         "activeTab"
     ],

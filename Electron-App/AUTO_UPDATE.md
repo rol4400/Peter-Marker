@@ -4,21 +4,30 @@ Peter Marker Desktop includes automatic update functionality using GitHub Releas
 
 ## How It Works
 
-1. **Startup Check**: The app checks for updates 3 seconds after launch (non-blocking)
-2. **Manual Check**: Users can check for updates via the tray menu: "Check for Updates"
-3. **Download Prompt**: When an update is available, users are prompted to download
-4. **Install on Quit**: Updates are installed automatically when the app quits
+1. **Startup Check**: The app checks for updates 3 seconds after launch (silent, non-blocking)
+2. **Silent Download**: If an update is available, it downloads in the background
+3. **Install on Next Launch**: Update installs automatically the next time you start the app
+4. **Manual Check**: Users can manually check via the tray menu: "Check for Updates"
+
+**Key Behavior**:
+- ✅ Updates check and download on startup
+- ✅ Updates install on next app launch (not on quit)
+- ✅ No interruptions during usage
+- ✅ Perfect for users who leave the app running and just reboot their PC
 
 ## For Users
 
-### Checking for Updates
-- **Automatic**: Updates check automatically on app startup
-- **Manual**: Right-click the tray icon → "Check for Updates"
+### Automatic Updates (Silent)
+- App checks for updates on every startup
+- Downloads happen in the background without prompting
+- Next time you launch the app, the update is installed
+- **No dialogs or interruptions during normal use**
 
-### Installing Updates
-1. When prompted, click "Download" to download the update
-2. When download completes, click "Restart Now" or "Later"
-3. If you choose "Later", the update will install next time you quit the app
+### Manual Update Check
+- Right-click the tray icon → "Check for Updates"
+- You'll see a message if an update is available or if you're on the latest version
+- Update downloads in background
+- Installs on next app launch
 
 ## For Developers
 
@@ -37,6 +46,9 @@ Peter Marker Desktop includes automatic update functionality using GitHub Releas
    ```
 
 2. **Set GitHub Token** (environment variable):
+   
+   See [GITHUB_TOKEN.md](GITHUB_TOKEN.md) for detailed setup instructions.
+   
    ```bash
    # Mac/Linux
    export GH_TOKEN="your_github_personal_access_token"
@@ -55,13 +67,18 @@ Peter Marker Desktop includes automatic update functionality using GitHub Releas
    
    # Both platforms
    npm run build:all
+   
+   # Build locally without publishing (for testing)
+   npm run build:win:local
+   npm run build:mac:local
    ```
 
 4. **electron-builder** will:
    - Build the installers
-   - Create a GitHub Release with the version tag
+   - Create a GitHub Release with the version tag (e.g., `v1.0.1`)
    - Upload installers as release assets
    - Generate `latest-mac.yml` and `latest.yml` for auto-updater
+   - Look for "published to GitHub" in the build output
 
 #### Manual GitHub Release
 
@@ -231,25 +248,41 @@ Then create releases with `-beta` or `-alpha` suffix:
 ## Update Flow Diagram
 
 ```
-App Startup
+App Launch #1 (v1.0.0)
     ↓
-Check for Updates (after 3s delay)
+Check for Updates (after 3s delay, silent)
     ↓
-Update Available? → No → Done
+Update Available? → No → Continue using app
+    ↓ Yes (v1.0.1 available)
+Download silently in background
+    ↓
+Download Complete (ready to install)
+    ↓
+User continues working...
+    ↓
+User quits app or reboots PC
+    ↓
+    ↓
+App Launch #2
+    ↓
+Update installs automatically
+    ↓
+App starts with v1.0.1
+    ↓
+Continue checking for updates on each launch
+
+
+Manual Check (via tray menu):
+    ↓
+User clicks "Check for Updates"
+    ↓
+Update Available? → No → Show "Up to date" dialog
     ↓ Yes
-Show Dialog: "Download update?"
+Show "Update available, downloading..." dialog
     ↓
-User clicks "Download"
+Download in background
     ↓
-Download in background (with progress)
-    ↓
-Download Complete
-    ↓
-Show Dialog: "Restart to install?"
-    ↓
-User clicks "Restart Now"
-    ↓
-App Quits → Installer Runs → App Restarts
+Will install on next launch
 ```
 
 ## Security Notes

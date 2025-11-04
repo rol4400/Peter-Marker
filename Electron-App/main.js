@@ -9,8 +9,8 @@ let isDrawingEnabled = false;
 // Configure auto-updater
 autoUpdater.logger = require('electron-log');
 autoUpdater.logger.transports.file.level = 'info';
-autoUpdater.autoDownload = false; // Don't auto-download, let user decide
-autoUpdater.autoInstallOnAppQuit = true;
+autoUpdater.autoDownload = false; // Prompt user before downloading
+autoUpdater.autoInstallOnAppQuit = false; // Install immediately after download
 
 function createWindow() {
     // Get primary display for initial window creation
@@ -52,10 +52,12 @@ function createWindow() {
     
     mainWindow.loadFile('renderer.html');
     
-    // Prevent the window from being closed
+    // Prevent the window from being closed unless actually quitting
     mainWindow.on('close', (event) => {
-        event.preventDefault();
-        mainWindow.hide();
+        if (!app.isQuitting) {
+            event.preventDefault();
+            mainWindow.hide();
+        }
     });
 
     // Handle display changes (monitor resolution, fullscreen, taskbar changes, etc.)
@@ -125,7 +127,8 @@ function createTray() {
     
     updateTrayMenu();
     
-    tray.setToolTip('Peter Marker - Click to toggle');
+    const version = app.getVersion();
+    tray.setToolTip(`Peter Marker v${version} - Click to toggle`);
     
     // Click on tray icon toggles drawing mode
     tray.on('click', () => {
@@ -133,8 +136,35 @@ function createTray() {
     });
 }
 
+function getAutoStartEnabled() {
+    const loginSettings = app.getLoginItemSettings();
+    return loginSettings.openAtLogin;
+}
+
+function setAutoStartEnabled(enabled) {
+    app.setLoginItemSettings({
+        openAtLogin: enabled,
+        openAsHidden: false,
+        args: []
+    });
+}
+
+function toggleAutoStart() {
+    const currentState = getAutoStartEnabled();
+    setAutoStartEnabled(!currentState);
+    updateTrayMenu();
+}
+
 function updateTrayMenu() {
+    const autoStartEnabled = getAutoStartEnabled();
+    const version = app.getVersion();
+    
     const contextMenu = Menu.buildFromTemplate([
+        {
+            label: `Peter Marker v${version}`,
+            enabled: false
+        },
+        { type: 'separator' },
         {
             label: isDrawingEnabled ? 'Disable Drawing' : 'Enable Drawing',
             click: () => toggleDrawing()
@@ -154,9 +184,17 @@ function updateTrayMenu() {
         },
         { type: 'separator' },
         {
+            label: autoStartEnabled ? '☑ Start on Boot' : '☐ Start on Boot',
+            click: () => toggleAutoStart()
+        },
+        { type: 'separator' },
+        {
             label: 'Quit Peter Marker',
             click: () => {
                 app.isQuitting = true;
+                if (mainWindow) {
+                    mainWindow.destroy();
+                }
                 app.quit();
             }
         }
@@ -235,6 +273,10 @@ ipcMain.on('forward-key', (event, keyCode) => {
     }
 });
 
+// Track if this is a manual update check (vs automatic)
+let isManualUpdateCheck = false;
+let progressWindow = null;
+
 // Auto-updater event handlers
 autoUpdater.on('checking-for-update', () => {
     console.log('Checking for update...');
@@ -242,24 +284,33 @@ autoUpdater.on('checking-for-update', () => {
 
 autoUpdater.on('update-available', (info) => {
     console.log('Update available:', info.version);
+    
+    // Always prompt user when update is available (startup or manual)
     if (mainWindow) {
-        const response = require('electron').dialog.showMessageBoxSync(mainWindow, {
+        const { dialog } = require('electron');
+        const response = dialog.showMessageBoxSync(mainWindow, {
             type: 'info',
             title: 'Update Available',
-            message: `A new version (${info.version}) is available. Would you like to download it now?`,
-            buttons: ['Download', 'Later'],
-            defaultId: 0
+            message: `An update to Peter Marker is available (v${info.version}). Would you like to install it now?`,
+            detail: 'The marker program will restart after the update is installed.',
+            buttons: ['Yes', 'No'],
+            defaultId: 0,
+            cancelId: 1
         });
         
         if (response === 0) {
+            // User clicked Yes - start download and show progress
+            createProgressWindow();
             autoUpdater.downloadUpdate();
         }
     }
+    isManualUpdateCheck = false;
 });
 
 autoUpdater.on('update-not-available', () => {
     console.log('No updates available');
-    if (mainWindow) {
+    // Only show dialog if this was a manual check
+    if (isManualUpdateCheck && mainWindow) {
         require('electron').dialog.showMessageBoxSync(mainWindow, {
             type: 'info',
             title: 'No Updates',
@@ -267,48 +318,115 @@ autoUpdater.on('update-not-available', () => {
             buttons: ['OK']
         });
     }
+    isManualUpdateCheck = false;
 });
 
 autoUpdater.on('error', (err) => {
     console.error('Update error:', err);
+    
+    // Close progress window if open
+    if (progressWindow) {
+        progressWindow.close();
+        progressWindow = null;
+    }
+    
+    // Only show error dialog if this was a manual check
+    if (isManualUpdateCheck && mainWindow) {
+        let message = 'Failed to check for updates.';
+        
+        // Provide more helpful messages based on the error
+        if (err.message && err.message.includes('net::ERR_INTERNET_DISCONNECTED')) {
+            message = 'No internet connection. Please check your network and try again.';
+        } else if (err.message && err.message.includes('404')) {
+            message = 'No updates are available yet. This is the first release.';
+        } else if (err.message && (err.message.includes('github') || err.message.includes('release'))) {
+            message = 'Unable to connect to update server. You may be running the latest version.';
+        }
+        
+        require('electron').dialog.showMessageBoxSync(mainWindow, {
+            type: 'info',
+            title: 'Update Check',
+            message: message,
+            buttons: ['OK']
+        });
+    }
+    isManualUpdateCheck = false;
 });
 
 autoUpdater.on('download-progress', (progressObj) => {
-    let message = `Download speed: ${progressObj.bytesPerSecond} - Downloaded ${progressObj.percent}%`;
-    console.log(message);
-});
-
-autoUpdater.on('update-downloaded', (info) => {
-    console.log('Update downloaded:', info.version);
-    if (mainWindow) {
-        const response = require('electron').dialog.showMessageBoxSync(mainWindow, {
-            type: 'info',
-            title: 'Update Ready',
-            message: `Version ${info.version} has been downloaded. Restart the application to install the update.`,
-            buttons: ['Restart Now', 'Later'],
-            defaultId: 0
-        });
-        
-        if (response === 0) {
-            autoUpdater.quitAndInstall();
-        }
+    const percent = Math.round(progressObj.percent);
+    const speed = progressObj.bytesPerSecond;
+    console.log(`Download progress: ${percent}% at ${(speed / 1024 / 1024).toFixed(2)} MB/s`);
+    
+    // Update progress window
+    if (progressWindow && progressWindow.webContents) {
+        progressWindow.webContents.send('download-progress', percent, speed);
     }
 });
 
+autoUpdater.on('update-downloaded', (info) => {
+    console.log('Update downloaded, installing now:', info.version);
+    
+    // Close progress window
+    if (progressWindow) {
+        progressWindow.close();
+        progressWindow = null;
+    }
+    
+    // Install and restart immediately
+    setImmediate(() => {
+        app.removeAllListeners('window-all-closed');
+        autoUpdater.quitAndInstall(false, true);
+    });
+});
+
+function createProgressWindow() {
+    if (progressWindow) return;
+    
+    progressWindow = new BrowserWindow({
+        width: 450,
+        height: 200,
+        resizable: false,
+        frame: false,
+        alwaysOnTop: true,
+        transparent: true,
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            preload: path.join(__dirname, 'update-preload.js')
+        }
+    });
+    
+    progressWindow.loadFile('update-progress.html');
+    
+    progressWindow.on('closed', () => {
+        progressWindow = null;
+    });
+}
+
 function checkForUpdates() {
+    isManualUpdateCheck = true;
     autoUpdater.checkForUpdates();
 }
 
 app.whenReady().then(() => {
+    // Enable auto-start by default on first launch
+    const loginSettings = app.getLoginItemSettings();
+    if (!loginSettings.wasOpenedAtLogin && !loginSettings.wasOpenedAsHidden) {
+        // First time running - enable auto-start by default
+        setAutoStartEnabled(true);
+    }
+    
     createWindow();
     createTray();
     
     // Start tracking mouse to follow active display
     startMouseTracking();
     
-    // Check for updates on startup (after a delay to not slow down launch)
+    // Check for updates on startup after a short delay
     setTimeout(() => {
-        autoUpdater.checkForUpdatesAndNotify();
+        console.log('Checking for updates on startup...');
+        autoUpdater.checkForUpdates();
     }, 3000);
     
     // Register global shortcut only for toggle (Cmd/Ctrl + Shift + D)
@@ -318,6 +436,10 @@ app.whenReady().then(() => {
     
     // Don't register arrow keys, Escape, PageUp/Down globally
     // Let them be handled by the renderer so they can be forwarded to the focused app
+});
+
+app.on('before-quit', () => {
+    app.isQuitting = true;
 });
 
 app.on('window-all-closed', () => {
