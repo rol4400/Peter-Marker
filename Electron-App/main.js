@@ -251,15 +251,17 @@ function toggleDrawing() {
             
             // On macOS, exit kiosk mode and unregister shortcuts
             if (process.platform === 'darwin') {
-                mainWindow.setKiosk(false);
                 unregisterDrawingShortcuts();
-                // Brief hide/show to restore previous app focus
+                mainWindow.setKiosk(false);
+                // Hide window completely to let PowerPoint regain focus
                 mainWindow.hide();
                 setTimeout(() => {
                     if (mainWindow) {
+                        // Make window click-through and non-focusable before showing
+                        mainWindow.setIgnoreMouseEvents(true, { forward: true });
                         mainWindow.show();
                     }
-                }, 50);
+                }, 200);
             } else {
                 mainWindow.setFocusable(false);
                 mainWindow.blur();
@@ -292,14 +294,15 @@ ipcMain.on('close-drawing', () => {
             mainWindow.setIgnoreMouseEvents(true, { forward: true });
             
             if (process.platform === 'darwin') {
-                mainWindow.setKiosk(false);
                 unregisterDrawingShortcuts();
+                mainWindow.setKiosk(false);
                 mainWindow.hide();
                 setTimeout(() => {
                     if (mainWindow) {
+                        mainWindow.setIgnoreMouseEvents(true, { forward: true });
                         mainWindow.show();
                     }
-                }, 50);
+                }, 200);
             } else {
                 mainWindow.setFocusable(false);
                 mainWindow.blur();
