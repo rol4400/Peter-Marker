@@ -252,16 +252,13 @@ function toggleDrawing() {
             // On macOS, exit kiosk mode and unregister shortcuts
             if (process.platform === 'darwin') {
                 unregisterDrawingShortcuts();
+                // Set non-focusable BEFORE exiting kiosk to prevent focus steal
+                mainWindow.setFocusable(false);
                 mainWindow.setKiosk(false);
-                // Hide window completely to let PowerPoint regain focus
-                mainWindow.hide();
-                setTimeout(() => {
-                    if (mainWindow) {
-                        // Make window click-through and non-focusable before showing
-                        mainWindow.setIgnoreMouseEvents(true, { forward: true });
-                        mainWindow.show();
-                    }
-                }, 200);
+                
+                // Activate the previous application (PowerPoint)
+                const { exec } = require('child_process');
+                exec('osascript -e \'tell application "System Events" to set frontmost of first process whose frontmost is true to true\'');
             } else {
                 mainWindow.setFocusable(false);
                 mainWindow.blur();
@@ -295,14 +292,12 @@ ipcMain.on('close-drawing', () => {
             
             if (process.platform === 'darwin') {
                 unregisterDrawingShortcuts();
+                mainWindow.setFocusable(false);
                 mainWindow.setKiosk(false);
-                mainWindow.hide();
-                setTimeout(() => {
-                    if (mainWindow) {
-                        mainWindow.setIgnoreMouseEvents(true, { forward: true });
-                        mainWindow.show();
-                    }
-                }, 200);
+                
+                // Activate the previous application (PowerPoint)
+                const { exec } = require('child_process');
+                exec('osascript -e \'tell application "System Events" to set frontmost of first process whose frontmost is true to true\'');
             } else {
                 mainWindow.setFocusable(false);
                 mainWindow.blur();
