@@ -55,13 +55,11 @@
         }
       ],
       "icon": "icons/icon.icns",
-      "hardenedRuntime": true,
+      "identity": null,
+      "hardenedRuntime": false,
       "gatekeeperAssess": false,
       "entitlements": "entitlements.mac.plist",
-      "entitlementsInherit": "entitlements.mac.plist",
-      "signIgnore": [
-        "node_modules/electron-updater"
-      ]
+      "entitlementsInherit": "entitlements.mac.plist"
     },
     "win": {
       "target": [
