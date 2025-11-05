@@ -47,9 +47,16 @@ function createWindow() {
     mainWindow.setPosition(x, y);
     mainWindow.setSize(width, height);
     
-    // Set window level to be above all other windows
-    mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+    // Set window level to be above all other windows, including fullscreen apps
+    // Use 'floating' level which stays above fullscreen without triggering dock
+    mainWindow.setAlwaysOnTop(true, 'floating');
     mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    
+    // On macOS, set additional window properties to prevent dock from showing
+    if (process.platform === 'darwin') {
+        // Set window collection behavior to prevent dock activation
+        mainWindow.setWindowButtonVisibility(false);
+    }
     
     mainWindow.loadFile('renderer.html');
     
@@ -224,13 +231,15 @@ function toggleDrawing() {
     
     if (mainWindow) {
         if (isDrawingEnabled) {
-            // When drawing is enabled, capture all mouse events
-            // Keep window non-focusable to prevent dock from showing on macOS
+            // When drawing is enabled, capture all mouse events and keyboard
             mainWindow.setIgnoreMouseEvents(false);
+            mainWindow.setFocusable(true);
+            mainWindow.focus();
             mainWindow.show();
         } else {
             // When drawing is disabled, pass through clicks (but can be overridden for UI elements)
             mainWindow.setIgnoreMouseEvents(true, { forward: true });
+            mainWindow.setFocusable(false);
             
             // On macOS, hide the window briefly to force focus back to the previous app
             if (process.platform === 'darwin') {
@@ -269,6 +278,7 @@ ipcMain.on('close-drawing', () => {
         isDrawingEnabled = false;
         if (mainWindow) {
             mainWindow.setIgnoreMouseEvents(true, { forward: true });
+            mainWindow.setFocusable(false);
             
             // On macOS, hide the window briefly to force focus back to the previous app
             if (process.platform === 'darwin') {
@@ -293,6 +303,8 @@ ipcMain.on('open-drawing', () => {
         isDrawingEnabled = true;
         if (mainWindow) {
             mainWindow.setIgnoreMouseEvents(false);
+            mainWindow.setFocusable(true);
+            mainWindow.focus();
             mainWindow.webContents.send('toggle-drawing', true);
         }
         updateTrayMenu();
