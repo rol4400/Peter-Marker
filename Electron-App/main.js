@@ -260,6 +260,7 @@ function toggleDrawing() {
                 const { exec } = require('child_process');
                 exec('osascript -e \'tell application "System Events" to set frontmost of first process whose frontmost is true to true\' -e \'tell application "System Events" to set autohide of dock preferences to true\'');
                 // Restore dock autohide to user preference after brief delay
+                exec('osascript -e \'tell application "System Events" to set autohide of dock preferences to false\'');
                 setTimeout(() => {
                     exec('osascript -e \'tell application "System Events" to set autohide of dock preferences to false\'');
                 }, 100);
