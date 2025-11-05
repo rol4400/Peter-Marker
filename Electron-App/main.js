@@ -225,14 +225,12 @@ function toggleDrawing() {
     if (mainWindow) {
         if (isDrawingEnabled) {
             // When drawing is enabled, capture all mouse events
+            // Keep window non-focusable to prevent dock from showing on macOS
             mainWindow.setIgnoreMouseEvents(false);
-            mainWindow.focus();
-            mainWindow.setFocusable(true);
             mainWindow.show();
         } else {
             // When drawing is disabled, pass through clicks (but can be overridden for UI elements)
             mainWindow.setIgnoreMouseEvents(true, { forward: true });
-            mainWindow.setFocusable(false);
             
             // On macOS, hide the window briefly to force focus back to the previous app
             if (process.platform === 'darwin') {
@@ -271,7 +269,6 @@ ipcMain.on('close-drawing', () => {
         isDrawingEnabled = false;
         if (mainWindow) {
             mainWindow.setIgnoreMouseEvents(true, { forward: true });
-            mainWindow.setFocusable(false);
             
             // On macOS, hide the window briefly to force focus back to the previous app
             if (process.platform === 'darwin') {
@@ -296,8 +293,6 @@ ipcMain.on('open-drawing', () => {
         isDrawingEnabled = true;
         if (mainWindow) {
             mainWindow.setIgnoreMouseEvents(false);
-            mainWindow.setFocusable(true);
-            mainWindow.focus();
             mainWindow.webContents.send('toggle-drawing', true);
         }
         updateTrayMenu();
