@@ -231,18 +231,29 @@ function toggleDrawing() {
     
     if (mainWindow) {
         if (isDrawingEnabled) {
-            // When drawing is enabled, capture all mouse events and keyboard
+            // When drawing is enabled, capture all mouse events
             mainWindow.setIgnoreMouseEvents(false);
-            mainWindow.setFocusable(true);
-            mainWindow.focus();
+            
+            // On macOS, enter kiosk mode to prevent dock from showing
+            if (process.platform === 'darwin') {
+                mainWindow.setKiosk(true);
+                // Register global shortcuts for closing
+                registerDrawingShortcuts();
+            } else {
+                mainWindow.setFocusable(true);
+                mainWindow.focus();
+            }
+            
             mainWindow.show();
         } else {
-            // When drawing is disabled, pass through clicks (but can be overridden for UI elements)
+            // When drawing is disabled, pass through clicks
             mainWindow.setIgnoreMouseEvents(true, { forward: true });
-            mainWindow.setFocusable(false);
             
-            // On macOS, hide the window briefly to force focus back to the previous app
+            // On macOS, exit kiosk mode and unregister shortcuts
             if (process.platform === 'darwin') {
+                mainWindow.setKiosk(false);
+                unregisterDrawingShortcuts();
+                // Brief hide/show to restore previous app focus
                 mainWindow.hide();
                 setTimeout(() => {
                     if (mainWindow) {
@@ -250,6 +261,7 @@ function toggleDrawing() {
                     }
                 }, 50);
             } else {
+                mainWindow.setFocusable(false);
                 mainWindow.blur();
             }
         }
@@ -278,10 +290,10 @@ ipcMain.on('close-drawing', () => {
         isDrawingEnabled = false;
         if (mainWindow) {
             mainWindow.setIgnoreMouseEvents(true, { forward: true });
-            mainWindow.setFocusable(false);
             
-            // On macOS, hide the window briefly to force focus back to the previous app
             if (process.platform === 'darwin') {
+                mainWindow.setKiosk(false);
+                unregisterDrawingShortcuts();
                 mainWindow.hide();
                 setTimeout(() => {
                     if (mainWindow) {
@@ -289,6 +301,7 @@ ipcMain.on('close-drawing', () => {
                     }
                 }, 50);
             } else {
+                mainWindow.setFocusable(false);
                 mainWindow.blur();
             }
             
@@ -303,8 +316,15 @@ ipcMain.on('open-drawing', () => {
         isDrawingEnabled = true;
         if (mainWindow) {
             mainWindow.setIgnoreMouseEvents(false);
-            mainWindow.setFocusable(true);
-            mainWindow.focus();
+            
+            if (process.platform === 'darwin') {
+                mainWindow.setKiosk(true);
+                registerDrawingShortcuts();
+            } else {
+                mainWindow.setFocusable(true);
+                mainWindow.focus();
+            }
+            
             mainWindow.webContents.send('toggle-drawing', true);
         }
         updateTrayMenu();
@@ -317,6 +337,40 @@ ipcMain.on('forward-key', (event, keyCode) => {
         toggleDrawing(); // This will close pen and make window non-focusable
     }
 });
+
+// Global shortcuts for drawing mode on macOS (when in kiosk mode)
+function registerDrawingShortcuts() {
+    if (process.platform !== 'darwin') return;
+    
+    // Register shortcuts to close the pen
+    const closeKeys = ['Escape', 'Left', 'Right', 'Up', 'Down', 'PageUp', 'PageDown', 'Space', 'Enter'];
+    
+    closeKeys.forEach(key => {
+        try {
+            globalShortcut.register(key, () => {
+                if (isDrawingEnabled) {
+                    toggleDrawing();
+                }
+            });
+        } catch (err) {
+            console.warn(`Could not register shortcut: ${key}`, err);
+        }
+    });
+}
+
+function unregisterDrawingShortcuts() {
+    if (process.platform !== 'darwin') return;
+    
+    const closeKeys = ['Escape', 'Left', 'Right', 'Up', 'Down', 'PageUp', 'PageDown', 'Space', 'Enter'];
+    
+    closeKeys.forEach(key => {
+        try {
+            globalShortcut.unregister(key);
+        } catch (err) {
+            console.warn(`Could not unregister shortcut: ${key}`, err);
+        }
+    });
+}
 
 // Track if this is a manual update check (vs automatic)
 let isManualUpdateCheck = false;
