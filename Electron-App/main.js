@@ -228,14 +228,24 @@ function toggleDrawing() {
             mainWindow.setIgnoreMouseEvents(false);
             mainWindow.focus();
             mainWindow.setFocusable(true);
+            mainWindow.show();
         } else {
             // When drawing is disabled, pass through clicks (but can be overridden for UI elements)
             mainWindow.setIgnoreMouseEvents(true, { forward: true });
-            mainWindow.blur();
             mainWindow.setFocusable(false);
+            
+            // On macOS, hide the window briefly to force focus back to the previous app
+            if (process.platform === 'darwin') {
+                mainWindow.hide();
+                setTimeout(() => {
+                    if (mainWindow) {
+                        mainWindow.show();
+                    }
+                }, 50);
+            } else {
+                mainWindow.blur();
+            }
         }
-        
-        mainWindow.show();
         
         // Send message to renderer
         mainWindow.webContents.send('toggle-drawing', isDrawingEnabled);
@@ -261,8 +271,20 @@ ipcMain.on('close-drawing', () => {
         isDrawingEnabled = false;
         if (mainWindow) {
             mainWindow.setIgnoreMouseEvents(true, { forward: true });
-            mainWindow.blur();
             mainWindow.setFocusable(false);
+            
+            // On macOS, hide the window briefly to force focus back to the previous app
+            if (process.platform === 'darwin') {
+                mainWindow.hide();
+                setTimeout(() => {
+                    if (mainWindow) {
+                        mainWindow.show();
+                    }
+                }, 50);
+            } else {
+                mainWindow.blur();
+            }
+            
             mainWindow.webContents.send('toggle-drawing', false);
         }
         updateTrayMenu();
