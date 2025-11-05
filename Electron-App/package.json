@@ -92,6 +92,7 @@
       "icons/**/*"
     ],
     "beforeBuild": "./build-scripts/beforeBuild.js",
+    "afterPack": "./build-scripts/afterPackClean.js",
     "afterAllArtifactBuild": "./build-scripts/afterPack.js"
   }
 }
