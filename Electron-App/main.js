@@ -1,6 +1,7 @@
 const { app, BrowserWindow, Tray, Menu, screen, ipcMain, globalShortcut } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
+const fs = require('fs');
 
 let mainWindow;
 let tray;
@@ -122,18 +123,28 @@ function stopMouseTracking() {
 
 function createTray() {
     // Create tray icon
-    const iconPath = path.join(__dirname, 'icons', process.platform === 'darwin' ? 'tray-icon-mac.png' : 'icon16.png');
-    tray = new Tray(iconPath);
+    const iconPath = path.join(__dirname, 'icons', 'icon16.png');
     
-    updateTrayMenu();
+    if (!fs.existsSync(iconPath)) {
+        console.error('Tray icon not found at:', iconPath);
+        return;
+    }
     
-    const version = app.getVersion();
-    tray.setToolTip(`Peter Marker v${version} - Click to toggle`);
-    
-    // Click on tray icon toggles drawing mode
-    tray.on('click', () => {
-        toggleDrawing();
-    });
+    try {
+        tray = new Tray(iconPath);
+        
+        updateTrayMenu();
+        
+        const version = app.getVersion();
+        tray.setToolTip(`Peter Marker v${version} - Click to toggle`);
+        
+        // Click on tray icon toggles drawing mode
+        tray.on('click', () => {
+            toggleDrawing();
+        });
+    } catch (err) {
+        console.error('Failed to create tray:', err);
+    }
 }
 
 function getAutoStartEnabled() {
@@ -156,6 +167,11 @@ function toggleAutoStart() {
 }
 
 function updateTrayMenu() {
+    if (!tray) {
+        console.warn('Tray not initialized, skipping menu update');
+        return;
+    }
+    
     const autoStartEnabled = getAutoStartEnabled();
     const version = app.getVersion();
     
