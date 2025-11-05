@@ -6,12 +6,13 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
-    "build:mac": "electron-builder --mac --publish always",
+    "prebuild:mac": "bash clean-mac-attrs.sh",
+    "build:mac": "npm run prebuild:mac && electron-builder --mac --publish always",
     "build:win": "electron-builder --win --publish always",
-    "build:all": "electron-builder --mac --win --publish always",
-    "build:mac:local": "electron-builder --mac --publish never",
+    "build:all": "npm run prebuild:mac && electron-builder --mac --win --publish always",
+    "build:mac:local": "npm run prebuild:mac && electron-builder --mac --publish never",
     "build:win:local": "electron-builder --win --publish never",
-    "build:all:local": "electron-builder --mac --win --publish never"
+    "build:all:local": "npm run prebuild:mac && electron-builder --mac --win --publish never"
   },
   "keywords": [
     "annotation",
@@ -90,6 +91,7 @@
       "update-preload.js",
       "icons/**/*"
     ],
+    "beforeBuild": "./build-scripts/beforeBuild.js",
     "afterAllArtifactBuild": "./build-scripts/afterPack.js"
   }
 }
