@@ -410,7 +410,7 @@ autoUpdater.on('download-progress', (progressObj) => {
 });
 
 autoUpdater.on('update-downloaded', (info) => {
-    console.log('Update downloaded, installing now:', info.version);
+    console.log('Update downloaded, ready to install:', info.version);
     
     // Close progress window
     if (progressWindow) {
@@ -418,11 +418,33 @@ autoUpdater.on('update-downloaded', (info) => {
         progressWindow = null;
     }
     
-    // Install and restart immediately
-    setImmediate(() => {
-        app.removeAllListeners('window-all-closed');
-        autoUpdater.quitAndInstall(false, true);
-    });
+    // On macOS with unsigned apps, we need to quit and the update will install on next launch
+    // On Windows, we can install immediately
+    if (process.platform === 'darwin') {
+        // macOS: Update will install on next launch
+        const { dialog } = require('electron');
+        const result = dialog.showMessageBoxSync({
+            type: 'info',
+            title: 'Update Ready',
+            message: `Peter Marker v${info.version} has been downloaded and is ready to install.`,
+            detail: 'The update will be installed the next time you launch the app. Would you like to quit now?',
+            buttons: ['Quit and Update', 'Later'],
+            defaultId: 0,
+            cancelId: 1
+        });
+        
+        if (result === 0) {
+            // User chose to quit now
+            app.isQuitting = true;
+            app.quit();
+        }
+    } else {
+        // Windows: Install and restart immediately
+        setImmediate(() => {
+            app.removeAllListeners('window-all-closed');
+            autoUpdater.quitAndInstall(false, true);
+        });
+    }
 });
 
 function createProgressWindow() {
