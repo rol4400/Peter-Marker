@@ -60,14 +60,31 @@
     <script>
         const penIcon = document.getElementById('penIcon');
         
-        // Click handler
-        penIcon.addEventListener('click', () => {
+        // Debounce to prevent double-triggering on touchscreen
+        let isToggling = false;
+        const DEBOUNCE_MS = 300;
+        
+        function debouncedToggle() {
+            if (isToggling) return;
+            
+            isToggling = true;
             window.electronAPI.toggleDrawing();
+            
+            setTimeout(() => {
+                isToggling = false;
+            }, DEBOUNCE_MS);
+        }
+        
+        // Click handler
+        penIcon.addEventListener('click', (e) => {
+            e.preventDefault();
+            debouncedToggle();
         });
         
         // Touch handler
-        penIcon.addEventListener('touchstart', () => {
-            window.electronAPI.toggleDrawing();
+        penIcon.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            debouncedToggle();
         });
         
         // Position the icon correctly based on display bounds
