@@ -23,7 +23,9 @@ function resizeCanvas() {
 // Position pen icon and toolbar at actual bottom of viewport
 function positionPenIcon() {
     const viewportHeight = window.innerHeight;
-    const bottomOffset = 20; // 20px from bottom
+    // On macOS, add extra offset to account for dock area (even when hidden)
+    const isMac = navigator.platform.toLowerCase().includes('mac');
+    const bottomOffset = isMac ? 100 : 20; // 100px from bottom on Mac, 20px on other platforms
     
     // Position pen icon
     penIcon.style.bottom = `${bottomOffset}px`;
