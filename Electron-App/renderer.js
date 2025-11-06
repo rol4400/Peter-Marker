@@ -277,9 +277,9 @@ function toggleDrawing() {
             
             // In kiosk mode, window starts at 0,0 (behind menu bar)
             // In normal mode, window starts below menu bar (~25px)
-            // So subtract menu bar height to maintain same screen position
+            // So add menu bar height to maintain same screen position
             const menuBarHeight = 25; // macOS menu bar height
-            const adjustedTop = rect.top - menuBarHeight;
+            const adjustedTop = rect.top + menuBarHeight;
             
             savedPenPosition = { top: adjustedTop, originalBottom: 60 };
         }
