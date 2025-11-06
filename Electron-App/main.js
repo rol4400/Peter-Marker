@@ -114,19 +114,33 @@ function createCatchWindow() {
     
     if (process.platform === 'darwin') {
         catchWindow.setWindowButtonVisibility(false);
-        catchWindow.setBackgroundColor('#00000000'); // Ensure transparent background on macOS
+        // Force transparency on macOS - important for multi-monitor setups
+        catchWindow.setBackgroundColor('#00000000');
+        // Additional macOS transparency settings for multi-monitor compatibility
+        try {
+            catchWindow.setVibrancy(null); // Disable vibrancy which can cause white background
+            catchWindow.setHasShadow(false);
+        } catch (e) {
+            console.log('Could not set additional transparency options:', e);
+        }
     }
     
     // Load a simple HTML that just calls toggleDrawing when clicked
     catchWindow.loadFile('catch-window.html');
     
-    // After content loads, reposition to ensure accurate placement
+    // After content loads, reposition and force transparency refresh
     catchWindow.webContents.on('did-finish-load', () => {
         const cursorPoint = screen.getCursorScreenPoint();
         const currentDisplay = screen.getDisplayNearestPoint(cursorPoint);
         const { x, y, width, height } = currentDisplay.bounds;
         // Reposition after load to match the positioning logic used after open/close
         catchWindow.setPosition(x + width - 100, y + height - 100);
+        
+        // Force transparency on macOS after load to handle multi-monitor issues
+        if (process.platform === 'darwin') {
+            catchWindow.setBackgroundColor('#00000000');
+        }
+        
         catchWindow.webContents.send('display-bounds', currentDisplay.bounds);
     });
     
@@ -156,6 +170,11 @@ function updateWindowToDisplay(display) {
         // Also move catch window
         if (catchWindow && !isDrawingEnabled) {
             catchWindow.setPosition(x + width - 100, y + height - 100);
+            
+            // Force transparency refresh on macOS when moving between displays
+            if (process.platform === 'darwin') {
+                catchWindow.setBackgroundColor('#00000000');
+            }
         }
         
         // Notify renderer to reposition UI elements
@@ -328,6 +347,11 @@ function toggleDrawing() {
             // Show catch window when not drawing
             if (catchWindow) {
                 catchWindow.show();
+                
+                // Force transparency refresh on macOS when showing
+                if (process.platform === 'darwin') {
+                    catchWindow.setBackgroundColor('#00000000');
+                }
             }
             
             // When drawing is disabled, pass through clicks
