@@ -85,7 +85,7 @@ function createPenIconWindow() {
     const { x: displayX, y: displayY, width: displayWidth, height: displayHeight } = currentDisplay.bounds;
     
     // Create small window for pen icon (60x60 positioned at bottom-right)
-    penIconWindow = new BrowserWindow({
+    const windowOptions = {
         width: 60,
         height: 60,
         x: displayX + displayWidth - 80,
@@ -107,7 +107,14 @@ function createPenIconWindow() {
             contextIsolation: true,
             preload: path.join(__dirname, 'preload.js')
         }
-    });
+    };
+    
+    // On macOS, use vibrancy for proper transparency
+    if (process.platform === 'darwin') {
+        windowOptions.vibrancy = 'under-window';
+    }
+    
+    penIconWindow = new BrowserWindow(windowOptions);
     
     penIconWindow.setAlwaysOnTop(true, 'screen-saver');
     penIconWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });

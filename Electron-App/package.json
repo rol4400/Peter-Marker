@@ -83,6 +83,7 @@
       "main.js",
       "renderer.html",
       "renderer.js",
+      "pen-icon.html",
       "styles.css",
       "preload.js",
       "update-progress.html",
