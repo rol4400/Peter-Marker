@@ -262,6 +262,9 @@ function openPen() {
 }
 
 function toggleDrawing() {
+    // Immediately disable click-through to ensure this click is captured
+    window.electronAPI.setIgnoreMouseEvents(false);
+    
     const isMac = navigator.platform.toLowerCase().includes('mac');
     
     // Set transition flag to prevent any repositioning
