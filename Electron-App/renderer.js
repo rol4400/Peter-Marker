@@ -24,35 +24,8 @@ function resizeCanvas() {
 
 // Position pen icon and toolbar at actual bottom of viewport
 function positionPenIcon() {
-    // Don't reposition during transitions to prevent flickering
-    if (isTransitioning) {
-        return;
-    }
-    
-    const isMac = navigator.platform.toLowerCase().includes('mac');
-    
-    if (isMac) {
-        // Once position is saved, NEVER call this function again - prevents all drift
-        if (savedPenPosition) {
-            return; // Position is locked, ignore all reposition requests
-        }
-        
-        // Initial positioning before first open
-        if (!isEnabled) {
-            penIcon.style.top = 'auto';
-            penIcon.style.bottom = '60px';
-            toolbarContainer.style.top = 'auto';
-            toolbarContainer.style.bottom = '60px';
-        }
-    } else {
-        // Non-Mac: simple bottom positioning
-        penIcon.style.top = 'auto';
-        penIcon.style.bottom = '20px';
-        toolbarContainer.style.top = 'auto';
-        toolbarContainer.style.bottom = '20px';
-    }
-    
-    // Update color picker position if toolbar is visible
+    // Simple positioning - just keep everything at bottom-right
+    // No special logic needed since catch window handles the closed state
     if (isEnabled) {
         setTimeout(updateColorPickerPosition, 50);
     }
@@ -194,17 +167,6 @@ function closePen() {
     // Hide pen icon - catch window will handle opening
     penIcon.style.display = 'none';
     penIcon.style.background = 'rgba(0, 0, 0, 0.5)';
-    penIcon.style.pointerEvents = 'auto';
-    
-    // On Mac, restore normal positioning after closing
-    const isMac = navigator.platform.toLowerCase().includes('mac');
-    if (isMac && savedPenPosition) {
-        // Restore original bottom positioning
-        penIcon.style.top = 'auto';
-        penIcon.style.bottom = `${savedPenPosition.originalBottom}px`;
-        toolbarContainer.style.top = 'auto';
-        toolbarContainer.style.bottom = `${savedPenPosition.originalBottom}px`;
-    }
     
     // Explicitly enable click-through for canvas area when pen is closed
     window.electronAPI.setIgnoreMouseEvents(true);
@@ -265,55 +227,17 @@ function openPen() {
 }
 
 function toggleDrawing() {
-    // Immediately disable click-through to ensure this click is captured
-    window.electronAPI.setIgnoreMouseEvents(false);
-    
-    const isMac = navigator.platform.toLowerCase().includes('mac');
-    
-    // Set transition flag to prevent any repositioning
-    isTransitioning = true;
-    
     isEnabled = !isEnabled;
-    
-    // On Mac, adjust for menu bar height difference between normal and kiosk mode
-    // Do this BEFORE opening if we're about to enable
-    if (isMac && isEnabled) {
-        // Only calculate position on FIRST open, then reuse it
-        if (!savedPenPosition) {
-            // Get the EXACT current position
-            const rect = penIcon.getBoundingClientRect();
-            
-            // In kiosk mode, window starts at 0,0 (behind menu bar)
-            // In normal mode, window starts below menu bar (~25px)
-            // So add menu bar height to maintain same screen position
-            const menuBarHeight = 25; // macOS menu bar height
-            const adjustedTop = rect.top + menuBarHeight;
-            
-            savedPenPosition = { top: adjustedTop, originalBottom: 60 };
-        }
-        
-        // Set to adjusted pixel position from top (use saved value)
-        penIcon.style.bottom = 'auto';
-        penIcon.style.top = `${savedPenPosition.top}px`;
-        toolbarContainer.style.bottom = 'auto';
-        toolbarContainer.style.top = `${savedPenPosition.top}px`;
-    }
     
     if (!isEnabled) {
         closePen();
         window.electronAPI.closeDrawing();
     } else {
         openPen();
-        // Tell main process to enable drawing (make window focusable)
         window.electronAPI.openDrawing();
     }
     
     toggleToolbar();
-    
-    // Clear transition flag after window state change completes
-    setTimeout(() => {
-        isTransitioning = false;
-    }, 500);
 }
 
 // Event listeners for pen icon - only used for closing, not opening
