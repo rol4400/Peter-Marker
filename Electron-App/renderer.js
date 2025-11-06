@@ -33,13 +33,12 @@ function positionPenIcon() {
     
     if (isMac) {
         if (isEnabled && savedPenPosition) {
-            // Maintain position using screen-based calculation
-            const rect = penIcon.getBoundingClientRect();
-            const newTop = window.innerHeight - savedPenPosition.distanceFromBottom - rect.height;
+            // Keep the locked position
+            console.log('positionPenIcon during drawing - using saved top:', savedPenPosition.top, 'current window.innerHeight:', window.innerHeight);
             penIcon.style.bottom = 'auto';
-            penIcon.style.top = `${newTop}px`;
+            penIcon.style.top = `${savedPenPosition.top}px`;
             toolbarContainer.style.bottom = 'auto';
-            toolbarContainer.style.top = `${newTop}px`;
+            toolbarContainer.style.top = `${savedPenPosition.top}px`;
         } else if (!isEnabled) {
             // Normal positioning when not drawing
             penIcon.style.top = 'auto';
@@ -263,23 +262,23 @@ function toggleDrawing() {
     // Set transition flag to prevent any repositioning
     isTransitioning = true;
     
-    // On Mac, calculate position from screen bottom that works in both modes
+    // On Mac, just lock the current pixel position - don't recalculate anything
     if (isMac && !isEnabled) {
-        // Get current position and calculate distance from screen bottom
+        // Get the EXACT current position
         const rect = penIcon.getBoundingClientRect();
-        const screenHeight = screen.height;
-        const distanceFromScreenBottom = screenHeight - rect.bottom;
         
-        // Use this distance consistently
-        savedPenPosition = { distanceFromBottom: distanceFromScreenBottom };
+        console.log('Before opening - rect.top:', rect.top, 'rect.bottom:', rect.bottom, 'window.innerHeight:', window.innerHeight);
         
-        // Calculate top position based on current viewport height and saved distance
-        const newTop = window.innerHeight - distanceFromScreenBottom - rect.height;
+        // Lock this exact top position
+        savedPenPosition = { top: rect.top };
         
+        // Set to exact pixel position from top
         penIcon.style.bottom = 'auto';
-        penIcon.style.top = `${newTop}px`;
+        penIcon.style.top = `${rect.top}px`;
         toolbarContainer.style.bottom = 'auto';
-        toolbarContainer.style.top = `${newTop}px`;
+        toolbarContainer.style.top = `${rect.top}px`;
+        
+        console.log('Set position to:', rect.top);
     }
     
     isEnabled = !isEnabled;
