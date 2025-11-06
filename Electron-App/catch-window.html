@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html style="background: transparent;">
+<html style="background: transparent; background-color: transparent;">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,7 +12,8 @@
         }
 
         html, body {
-            background: transparent;
+            background: transparent !important;
+            background-color: transparent !important;
             width: 100%;
             height: 100%;
             overflow: hidden;
@@ -26,6 +27,8 @@
             align-items: flex-end;
             justify-content: flex-end;
             padding: 20px; /* Match main window icon at bottom: 20px, right: 20px */
+            /* Force transparent background at CSS level */
+            background: rgba(0, 0, 0, 0) !important;
         }
 
         #penIcon {
@@ -98,6 +101,29 @@
             
             // No additional positioning needed - CSS handles it
             console.log('Catch window positioned for display:', bounds);
+        });
+        
+        // Force transparency at the document level continuously for macOS multi-monitor issues
+        function enforceTransparency() {
+            document.documentElement.style.background = 'transparent';
+            document.documentElement.style.backgroundColor = 'transparent';
+            document.body.style.background = 'rgba(0, 0, 0, 0)';
+            document.body.style.backgroundColor = 'transparent';
+        }
+        
+        // Enforce on load
+        enforceTransparency();
+        
+        // Re-enforce periodically to handle compositor issues
+        setInterval(enforceTransparency, 500);
+        
+        // Re-enforce on visibility change (when window is shown)
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                enforceTransparency();
+                setTimeout(enforceTransparency, 50);
+                setTimeout(enforceTransparency, 100);
+            }
         });
     </script>
 </body>

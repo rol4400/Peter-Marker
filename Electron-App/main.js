@@ -102,10 +102,13 @@ function createCatchWindow() {
         fullscreenable: false,
         focusable: false,
         acceptFirstMouse: true,
+        opacity: 1.0,
+        backgroundColor: '#00000000',
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
-            preload: path.join(__dirname, 'preload.js')
+            preload: path.join(__dirname, 'preload.js'),
+            offscreen: false
         }
     });
     
@@ -116,6 +119,7 @@ function createCatchWindow() {
         catchWindow.setWindowButtonVisibility(false);
         // Force transparency on macOS - important for multi-monitor setups
         catchWindow.setBackgroundColor('#00000000');
+        catchWindow.setOpacity(1.0);
         // Additional macOS transparency settings for multi-monitor compatibility
         try {
             catchWindow.setVibrancy(null); // Disable vibrancy which can cause white background
@@ -123,6 +127,12 @@ function createCatchWindow() {
         } catch (e) {
             console.log('Could not set additional transparency options:', e);
         }
+        
+        // Force invalidate to ensure transparency is applied
+        setImmediate(() => {
+            catchWindow.setBackgroundColor('#00000000');
+            catchWindow.setOpacity(1.0);
+        });
     }
     
     // Load a simple HTML that just calls toggleDrawing when clicked
@@ -138,7 +148,16 @@ function createCatchWindow() {
         
         // Force transparency on macOS after load to handle multi-monitor issues
         if (process.platform === 'darwin') {
-            catchWindow.setBackgroundColor('#00000000');
+            // Multiple refresh attempts to ensure transparency sticks
+            const forceTransparency = () => {
+                catchWindow.setBackgroundColor('#00000000');
+                catchWindow.setOpacity(1.0);
+            };
+            
+            forceTransparency();
+            setTimeout(forceTransparency, 50);
+            setTimeout(forceTransparency, 100);
+            setTimeout(forceTransparency, 200);
         }
         
         catchWindow.webContents.send('display-bounds', currentDisplay.bounds);
@@ -173,7 +192,17 @@ function updateWindowToDisplay(display) {
             
             // Force transparency refresh on macOS when moving between displays
             if (process.platform === 'darwin') {
+                // Aggressive transparency enforcement
                 catchWindow.setBackgroundColor('#00000000');
+                catchWindow.setOpacity(1.0);
+                
+                // Additional refresh with delay to handle compositor issues
+                setTimeout(() => {
+                    if (catchWindow && !catchWindow.isDestroyed()) {
+                        catchWindow.setBackgroundColor('#00000000');
+                        catchWindow.setOpacity(1.0);
+                    }
+                }, 100);
             }
         }
         
@@ -346,11 +375,27 @@ function toggleDrawing() {
         } else {
             // Show catch window when not drawing
             if (catchWindow) {
-                catchWindow.show();
-                
-                // Force transparency refresh on macOS when showing
+                // Force transparency BEFORE showing on macOS
                 if (process.platform === 'darwin') {
                     catchWindow.setBackgroundColor('#00000000');
+                    catchWindow.setOpacity(1.0);
+                }
+                
+                catchWindow.show();
+                
+                // Force transparency refresh on macOS after showing
+                if (process.platform === 'darwin') {
+                    setImmediate(() => {
+                        catchWindow.setBackgroundColor('#00000000');
+                        catchWindow.setOpacity(1.0);
+                    });
+                    
+                    setTimeout(() => {
+                        if (catchWindow && !catchWindow.isDestroyed()) {
+                            catchWindow.setBackgroundColor('#00000000');
+                            catchWindow.setOpacity(1.0);
+                        }
+                    }, 50);
                 }
             }
             
@@ -751,11 +796,3 @@ app.on('will-quit', () => {
     // Unregister all shortcuts
     globalShortcut.unregisterAll();
 });
-
-// Set the app to start at login (Mac)
-if (process.platform === 'darwin') {
-    app.setLoginItemSettings({
-        openAtLogin: true,
-        openAsHidden: true
-    });
-}
