@@ -324,6 +324,14 @@ penIcon.addEventListener('mouseleave', () => {
     }
 });
 
+// Handle touch on pen icon to disable click-through
+penIcon.addEventListener('touchstart', (e) => {
+    if (!isEnabled) {
+        e.stopPropagation();
+        window.electronAPI.setIgnoreMouseEvents(false);
+    }
+}, { passive: false });
+
 // Handle mouse enter/leave on toolbar
 toolbarContainer.addEventListener('mouseenter', () => {
     if (!isEnabled) {
@@ -336,6 +344,14 @@ toolbarContainer.addEventListener('mouseleave', () => {
         window.electronAPI.setIgnoreMouseEvents(true);
     }
 });
+
+// Handle touch on toolbar to disable click-through
+toolbarContainer.addEventListener('touchstart', (e) => {
+    if (!isEnabled) {
+        e.stopPropagation();
+        window.electronAPI.setIgnoreMouseEvents(false);
+    }
+}, { passive: false });
 
 // Event listeners for toolbar buttons
 document.getElementById('pen').addEventListener('click', () => {
