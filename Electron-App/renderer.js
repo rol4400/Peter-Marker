@@ -317,6 +317,11 @@ penIcon.addEventListener('touchstart', (e) => {
     window.electronAPI.setIgnoreMouseEvents(false);
 }, { passive: true });
 
+// Handle mouse down on pen icon - disable click-through before click fires
+penIcon.addEventListener('mousedown', () => {
+    window.electronAPI.setIgnoreMouseEvents(false);
+});
+
 // Handle mouse enter/leave on pen icon to disable click-through when hovering
 penIcon.addEventListener('mouseenter', () => {
     window.electronAPI.setIgnoreMouseEvents(false);
