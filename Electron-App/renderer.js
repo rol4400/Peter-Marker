@@ -174,6 +174,9 @@ function closePen() {
     penIcon.style.background = 'rgba(0, 0, 0, 0.5)';
     penIcon.style.pointerEvents = 'auto'; // Ensure pen icon is always clickable
     
+    // Keep the pen icon area clickable by disabling click-through
+    window.electronAPI.setIgnoreMouseEvents(false);
+    
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawingHistory = [];
     currentHistoryIndex = -1;
