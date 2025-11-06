@@ -84,12 +84,13 @@ function createCatchWindow() {
     const currentDisplay = screen.getDisplayNearestPoint(cursorPoint);
     const { x: displayX, y: displayY, width: displayWidth, height: displayHeight } = currentDisplay.bounds;
     
-    // Create a 100x100 window in bottom-right corner to catch clicks
+    // Create a 80x80 window positioned to match main window pen icon (20px from edges)
+    // Window is 80x80 so icon (44px) has 18px padding, positioned at 20px from screen edges
     catchWindow = new BrowserWindow({
-        width: 100,
-        height: 100,
-        x: displayX + displayWidth - 100,
-        y: displayY + displayHeight - 100,
+        width: 80,
+        height: 80,
+        x: displayX + displayWidth - 100,  // 80px width + 20px margin
+        y: displayY + displayHeight - 100, // 80px height + 20px margin
         transparent: true,
         frame: false,
         alwaysOnTop: true,
@@ -118,6 +119,13 @@ function createCatchWindow() {
     // Load a simple HTML that just calls toggleDrawing when clicked
     catchWindow.loadFile('catch-window.html');
     
+    // After content loads, send display bounds so it can position itself correctly
+    catchWindow.webContents.on('did-finish-load', () => {
+        const cursorPoint = screen.getCursorScreenPoint();
+        const currentDisplay = screen.getDisplayNearestPoint(cursorPoint);
+        catchWindow.webContents.send('display-bounds', currentDisplay.bounds);
+    });
+    
     catchWindow.on('close', (event) => {
         if (!app.isQuitting) {
             event.preventDefault();
@@ -141,7 +149,7 @@ function updateWindowToDisplay(display) {
         const { x, y, width, height } = display.bounds;
         mainWindow.setBounds({ x, y, width, height });
         
-        // Also move catch window
+        // Also move catch window (80px window + 20px margin)
         if (catchWindow && !isDrawingEnabled) {
             catchWindow.setPosition(x + width - 100, y + height - 100);
         }

@@ -69,6 +69,19 @@
         penIcon.addEventListener('touchstart', () => {
             window.electronAPI.toggleDrawing();
         });
+        
+        // Position the icon correctly based on display bounds
+        window.electronAPI.onDisplayBounds((bounds) => {
+            // Calculate where the icon should be positioned
+            // Icon is 44px with 20px padding = 64px total from corner
+            // But we want it at the same position as the main window CSS (bottom: 20px, right: 20px)
+            
+            // The body element has padding: 18px and flexbox aligns to bottom-right
+            // This should match the main window's bottom: 20px, right: 20px positioning
+            
+            // No additional positioning needed - CSS handles it
+            console.log('Catch window positioned for display:', bounds);
+        });
     </script>
 </body>
 </html>
