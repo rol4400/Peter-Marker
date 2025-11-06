@@ -25,7 +25,7 @@ function positionPenIcon() {
     const viewportHeight = window.innerHeight;
     // On macOS, add extra offset to account for dock area (even when hidden)
     const isMac = navigator.platform.toLowerCase().includes('mac');
-    const bottomOffset = isMac ? 100 : 20; // 100px from bottom on Mac, 20px on other platforms
+    const bottomOffset = isMac ? 60 : 20; // 60px from bottom on Mac, 20px on other platforms
     
     // Position pen icon
     penIcon.style.bottom = `${bottomOffset}px`;
@@ -172,6 +172,7 @@ function closePen() {
     canvas.classList.remove('active');
     canvas.style.pointerEvents = 'none';
     penIcon.style.background = 'rgba(0, 0, 0, 0.5)';
+    penIcon.style.pointerEvents = 'auto'; // Ensure pen icon is always clickable
     
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawingHistory = [];
@@ -202,6 +203,7 @@ function openPen() {
     canvas.classList.add('active');
     canvas.style.pointerEvents = 'auto';
     penIcon.style.background = 'rgba(255, 0, 0, 0.5)';
+    penIcon.style.pointerEvents = 'auto'; // Ensure pen icon is always clickable
     
     const buttons = toolbarContainer.children;
     for (let i = 0; i < buttons.length - 1; i++) {
