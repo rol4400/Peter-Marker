@@ -270,26 +270,25 @@ function toggleDrawing() {
     
     // On Mac, adjust for menu bar height difference between normal and kiosk mode
     if (isMac && !isEnabled) {
-        // Get the EXACT current position
-        const rect = penIcon.getBoundingClientRect();
+        // Only calculate position on FIRST open, then reuse it
+        if (!savedPenPosition) {
+            // Get the EXACT current position
+            const rect = penIcon.getBoundingClientRect();
+            
+            // In kiosk mode, window starts at 0,0 (behind menu bar)
+            // In normal mode, window starts below menu bar (~25px)
+            // So subtract menu bar height to maintain same screen position
+            const menuBarHeight = 25; // macOS menu bar height
+            const adjustedTop = rect.top - menuBarHeight;
+            
+            savedPenPosition = { top: adjustedTop, originalBottom: 60 };
+        }
         
-        console.log('Before opening - rect.top:', rect.top, 'rect.bottom:', rect.bottom, 'window.innerHeight:', window.innerHeight);
-        
-        // In kiosk mode, window starts at 0,0 (behind menu bar)
-        // In normal mode, window starts below menu bar (~25px)
-        // So subtract menu bar height to maintain same screen position
-        const menuBarHeight = 25; // macOS menu bar height
-        const adjustedTop = rect.top + menuBarHeight;
-        
-        savedPenPosition = { top: adjustedTop };
-        
-        // Set to adjusted pixel position from top
+        // Set to adjusted pixel position from top (use saved value)
         penIcon.style.bottom = 'auto';
-        penIcon.style.top = `${adjustedTop}px`;
+        penIcon.style.top = `${savedPenPosition.top}px`;
         toolbarContainer.style.bottom = 'auto';
-        toolbarContainer.style.top = `${adjustedTop}px`;
-        
-        console.log('Set position to:', adjustedTop, '(rect.top', rect.top, '- menuBarHeight', menuBarHeight, ')');
+        toolbarContainer.style.top = `${savedPenPosition.top}px`;
     }
     
     isEnabled = !isEnabled;
