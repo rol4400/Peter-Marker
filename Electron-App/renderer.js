@@ -191,6 +191,15 @@ function closePen() {
     // Keep the pen icon area clickable by disabling click-through
     window.electronAPI.setIgnoreMouseEvents(false);
     
+    // On Mac, restore normal bottom positioning after closing
+    const isMac = navigator.platform.toLowerCase().includes('mac');
+    if (isMac) {
+        penIcon.style.top = 'auto';
+        penIcon.style.bottom = '60px';
+        toolbarContainer.style.top = 'auto';
+        toolbarContainer.style.bottom = '60px';
+    }
+    
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawingHistory = [];
     currentHistoryIndex = -1;
@@ -216,13 +225,6 @@ function closePen() {
 }
 
 function openPen() {
-    // Save current screen position before opening (macOS only)
-    const isMac = navigator.platform.toLowerCase().includes('mac');
-    if (isMac) {
-        const rect = penIcon.getBoundingClientRect();
-        savedPenPosition = { top: rect.top };
-    }
-    
     // Add active class to canvas to make it interactive
     canvas.classList.add('active');
     canvas.style.pointerEvents = 'auto';
@@ -248,19 +250,29 @@ function openPen() {
 }
 
 function toggleDrawing() {
+    const isMac = navigator.platform.toLowerCase().includes('mac');
+    
+    // On Mac, save the current screen position BEFORE changing state
+    if (isMac && !isEnabled) {
+        const rect = penIcon.getBoundingClientRect();
+        savedPenPosition = { top: rect.top };
+        
+        // Pre-position using saved coordinates BEFORE opening
+        penIcon.style.bottom = 'auto';
+        penIcon.style.top = `${savedPenPosition.top}px`;
+        toolbarContainer.style.bottom = 'auto';
+        toolbarContainer.style.top = `${savedPenPosition.top}px`;
+    }
+    
     isEnabled = !isEnabled;
     
     if (!isEnabled) {
         closePen();
         window.electronAPI.closeDrawing();
-        // Reset position after closing
-        setTimeout(() => positionPenIcon(), 150);
     } else {
         openPen();
         // Tell main process to enable drawing (make window focusable)
         window.electronAPI.openDrawing();
-        // Apply saved position after opening
-        setTimeout(() => positionPenIcon(), 150);
     }
     
     toggleToolbar();
