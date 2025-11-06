@@ -181,9 +181,6 @@ function closePen() {
     // Keep the pen icon area clickable by disabling click-through
     window.electronAPI.setIgnoreMouseEvents(false);
     
-    // Reposition for non-kiosk mode (will use larger offset on macOS)
-    positionPenIcon();
-    
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawingHistory = [];
     currentHistoryIndex = -1;
@@ -202,6 +199,9 @@ function closePen() {
     colorPicker.style.left = '-100px';
     colorPicker.style.top = '-100px';
     eraserCursor.style.display = 'none';
+
+    // Reposition for non-kiosk mode (will use larger offset on macOS)
+    positionPenIcon();
     
     penIcon.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="pointer-events: none;">
         <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
