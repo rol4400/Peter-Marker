@@ -5,6 +5,7 @@ let isErasing = false;
 let penColor = "#ff0000";
 let drawingHistory = [];
 let currentHistoryIndex = -1;
+let fixedBottomPosition = null; // Store fixed position on macOS
 
 // Get DOM elements
 const penIcon = document.getElementById('penIcon');
@@ -26,15 +27,17 @@ function positionPenIcon() {
     const isMac = navigator.platform.toLowerCase().includes('mac');
     
     if (isMac) {
-        // Calculate position from top instead to avoid dock area confusion
-        // Dock is ~80px, so position should be viewportHeight - 100 from top when not in kiosk
-        // In kiosk mode, viewportHeight is larger, so same calculation keeps same screen position
-        const targetFromTop = viewportHeight - 80;
+        // On first call when not in kiosk mode, calculate and store the fixed position
+        if (fixedBottomPosition === null && !isEnabled) {
+            // Set initial position: 60px from bottom in non-kiosk mode
+            fixedBottomPosition = 60;
+        }
         
-        penIcon.style.bottom = 'auto';
-        penIcon.style.top = `${targetFromTop}px`;
-        toolbarContainer.style.bottom = 'auto';
-        toolbarContainer.style.top = `${targetFromTop}px`;
+        // Always use the same bottom offset regardless of viewport height changes
+        penIcon.style.top = 'auto';
+        penIcon.style.bottom = `${fixedBottomPosition}px`;
+        toolbarContainer.style.top = 'auto';
+        toolbarContainer.style.bottom = `${fixedBottomPosition}px`;
     } else {
         // Non-Mac: simple bottom positioning
         penIcon.style.top = 'auto';
@@ -250,9 +253,6 @@ function toggleDrawing() {
     }
     
     toggleToolbar();
-    
-    // Reposition after state change to adjust for window bounds change
-    setTimeout(() => positionPenIcon(), 100);
 }
 
 // Event listeners for pen icon
