@@ -5,7 +5,7 @@ let isErasing = false;
 let penColor = "#ff0000";
 let drawingHistory = [];
 let currentHistoryIndex = -1;
-let fixedBottomPosition = null; // Store fixed position on macOS
+let savedPenPosition = null; // Store actual screen position before opening
 
 // Get DOM elements
 const penIcon = document.getElementById('penIcon');
@@ -23,29 +23,22 @@ function resizeCanvas() {
 
 // Position pen icon and toolbar at actual bottom of viewport
 function positionPenIcon() {
-    const viewportHeight = window.innerHeight;
     const isMac = navigator.platform.toLowerCase().includes('mac');
     
     if (isMac) {
-        // Don't reposition while drawing - it causes flicker when entering kiosk mode
-        if (isEnabled) {
-            if (isEnabled) {
-                setTimeout(updateColorPickerPosition, 50);
-            }
-            return;
+        if (isEnabled && savedPenPosition) {
+            // Use saved screen position when in drawing mode
+            penIcon.style.bottom = 'auto';
+            penIcon.style.top = `${savedPenPosition.top}px`;
+            toolbarContainer.style.bottom = 'auto';
+            toolbarContainer.style.top = `${savedPenPosition.top}px`;
+        } else if (!isEnabled) {
+            // Normal positioning when not drawing
+            penIcon.style.top = 'auto';
+            penIcon.style.bottom = '60px';
+            toolbarContainer.style.top = 'auto';
+            toolbarContainer.style.bottom = '60px';
         }
-        
-        // On first call when not in kiosk mode, calculate and store the fixed position
-        if (fixedBottomPosition === null) {
-            // Set initial position: 50px from bottom in non-kiosk mode
-            fixedBottomPosition = 50;
-        }
-        
-        // Always use the same bottom offset regardless of viewport height changes
-        penIcon.style.top = 'auto';
-        penIcon.style.bottom = `${fixedBottomPosition}px`;
-        toolbarContainer.style.top = 'auto';
-        toolbarContainer.style.bottom = `${fixedBottomPosition}px`;
     } else {
         // Non-Mac: simple bottom positioning
         penIcon.style.top = 'auto';
@@ -55,7 +48,6 @@ function positionPenIcon() {
     }
     
     // Update color picker position if toolbar is visible
-    updateColorPickerPosition();
     if (isEnabled) {
         setTimeout(updateColorPickerPosition, 50);
     }
@@ -224,6 +216,13 @@ function closePen() {
 }
 
 function openPen() {
+    // Save current screen position before opening (macOS only)
+    const isMac = navigator.platform.toLowerCase().includes('mac');
+    if (isMac) {
+        const rect = penIcon.getBoundingClientRect();
+        savedPenPosition = { top: rect.top };
+    }
+    
     // Add active class to canvas to make it interactive
     canvas.classList.add('active');
     canvas.style.pointerEvents = 'auto';
@@ -254,10 +253,14 @@ function toggleDrawing() {
     if (!isEnabled) {
         closePen();
         window.electronAPI.closeDrawing();
+        // Reset position after closing
+        setTimeout(() => positionPenIcon(), 150);
     } else {
         openPen();
         // Tell main process to enable drawing (make window focusable)
         window.electronAPI.openDrawing();
+        // Apply saved position after opening
+        setTimeout(() => positionPenIcon(), 150);
     }
     
     toggleToolbar();
