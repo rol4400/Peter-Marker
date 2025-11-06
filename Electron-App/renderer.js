@@ -22,6 +22,14 @@ function resizeCanvas() {
 
 // Position pen icon and toolbar at actual bottom of viewport
 function positionPenIcon() {
+    // Don't reposition while drawing is enabled (kiosk mode changes window bounds)
+    if (isEnabled) {
+        if (isEnabled) {
+            setTimeout(updateColorPickerPosition, 50);
+        }
+        return;
+    }
+    
     const viewportHeight = window.innerHeight;
     // On macOS, add extra offset to account for dock area (even when hidden)
     const isMac = navigator.platform.toLowerCase().includes('mac');
