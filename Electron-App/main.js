@@ -84,12 +84,12 @@ function createCatchWindow() {
     const currentDisplay = screen.getDisplayNearestPoint(cursorPoint);
     const { x: displayX, y: displayY, width: displayWidth, height: displayHeight } = currentDisplay.bounds;
     
-    // Create a 32x32 window that fits inside the circular pen icon to hide any white background
+    // Create a 100x100 window in bottom-right corner to catch clicks
     const windowOptions = {
-        width: 32,
-        height: 32,
-        x: displayX + displayWidth - 48,
-        y: displayY + displayHeight - 48,
+        width: 100,
+        height: 100,
+        x: displayX + displayWidth - 100,
+        y: displayY + displayHeight - 100,
         transparent: true,
         frame: false,
         alwaysOnTop: true,
@@ -102,19 +102,18 @@ function createCatchWindow() {
         fullscreenable: false,
         focusable: false,
         acceptFirstMouse: true,
-        opacity: 1.0,
         backgroundColor: '#00000000',
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
-            preload: path.join(__dirname, 'preload.js'),
-            offscreen: false
+            preload: path.join(__dirname, 'preload.js')
         }
     };
     
-    // On macOS, use 'panel' type which has better transparency on external monitors
+    // On macOS, add transparency fixes for external monitors
     if (process.platform === 'darwin') {
-        windowOptions.type = 'panel';
+        windowOptions.visualEffectState = 'active';
+        windowOptions.vibrancy = 'under-window';
     }
     
     catchWindow = new BrowserWindow(windowOptions);
@@ -124,22 +123,6 @@ function createCatchWindow() {
     
     if (process.platform === 'darwin') {
         catchWindow.setWindowButtonVisibility(false);
-        // Force transparency on macOS - important for multi-monitor setups
-        catchWindow.setBackgroundColor('#00000000');
-        catchWindow.setOpacity(1.0);
-        // Additional macOS transparency settings for multi-monitor compatibility
-        try {
-            catchWindow.setVibrancy(null); // Disable vibrancy which can cause white background
-            catchWindow.setHasShadow(false);
-        } catch (e) {
-            console.log('Could not set additional transparency options:', e);
-        }
-        
-        // Force invalidate to ensure transparency is applied
-        setImmediate(() => {
-            catchWindow.setBackgroundColor('#00000000');
-            catchWindow.setOpacity(1.0);
-        });
     }
     
     // Load a simple HTML that just calls toggleDrawing when clicked
@@ -151,21 +134,9 @@ function createCatchWindow() {
         const currentDisplay = screen.getDisplayNearestPoint(cursorPoint);
         const { x, y, width, height } = currentDisplay.bounds;
         // Reposition after load to match the positioning logic used after open/close
-        catchWindow.setPosition(x + width - 48, y + height - 48);
+        catchWindow.setPosition(x + width - 100, y + height - 100);
         
-        // Force transparency on macOS after load to handle multi-monitor issues
-        if (process.platform === 'darwin') {
-            // Multiple refresh attempts to ensure transparency sticks
-            const forceTransparency = () => {
-                catchWindow.setBackgroundColor('#00000000');
-                catchWindow.setOpacity(1.0);
-            };
-            
-            forceTransparency();
-            setTimeout(forceTransparency, 50);
-            setTimeout(forceTransparency, 100);
-            setTimeout(forceTransparency, 200);
-        }
+
         
         catchWindow.webContents.send('display-bounds', currentDisplay.bounds);
     });
@@ -193,24 +164,10 @@ function updateWindowToDisplay(display) {
         const { x, y, width, height } = display.bounds;
         mainWindow.setBounds({ x, y, width, height });
         
-        // Also move catch window (32x32 centered at 48px from edges to fit inside icon)
+        // Also move catch window
         if (catchWindow && !isDrawingEnabled) {
-            catchWindow.setPosition(x + width - 48, y + height - 48);
-            
-            // Force transparency refresh on macOS when moving between displays
-            if (process.platform === 'darwin') {
-                // Aggressive transparency enforcement
-                catchWindow.setBackgroundColor('#00000000');
-                catchWindow.setOpacity(1.0);
-                
-                // Additional refresh with delay to handle compositor issues
-                setTimeout(() => {
-                    if (catchWindow && !catchWindow.isDestroyed()) {
-                        catchWindow.setBackgroundColor('#00000000');
-                        catchWindow.setOpacity(1.0);
-                    }
-                }, 100);
-            }
+            catchWindow.setPosition(x + width - 100, y + height - 100);
+
         }
         
         // Notify renderer to reposition UI elements
@@ -382,28 +339,7 @@ function toggleDrawing() {
         } else {
             // Show catch window when not drawing
             if (catchWindow) {
-                // Force transparency BEFORE showing on macOS
-                if (process.platform === 'darwin') {
-                    catchWindow.setBackgroundColor('#00000000');
-                    catchWindow.setOpacity(1.0);
-                }
-                
                 catchWindow.show();
-                
-                // Force transparency refresh on macOS after showing
-                if (process.platform === 'darwin') {
-                    setImmediate(() => {
-                        catchWindow.setBackgroundColor('#00000000');
-                        catchWindow.setOpacity(1.0);
-                    });
-                    
-                    setTimeout(() => {
-                        if (catchWindow && !catchWindow.isDestroyed()) {
-                            catchWindow.setBackgroundColor('#00000000');
-                            catchWindow.setOpacity(1.0);
-                        }
-                    }, 50);
-                }
             }
             
             // When drawing is disabled, pass through clicks

@@ -24,20 +24,25 @@
             user-select: none;
             -webkit-user-select: none;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
+            align-items: flex-end;
+            justify-content: flex-end;
+            padding: 18px;
             /* Force transparent background at CSS level */
             background: rgba(0, 0, 0, 0) !important;
-            cursor: pointer;
         }
 
         #penIcon {
-            /* Invisible clickable area that fits inside the circular icon */
-            background: transparent;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 50%;
             cursor: pointer;
-            width: 32px;
-            height: 32px;
+            color: white;
+            font-size: 14px;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 0px;
+            transition: background 0.3s ease;
+            width: 44px;
+            height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -49,8 +54,11 @@
     </style>
 </head>
 <body>
-    <!-- Invisible clickable div - the actual pen icon is shown in the main window -->
-    <div id="penIcon"></div>
+    <div id="penIcon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="pointer-events: none;">
+            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+        </svg>
+    </div>
 
     <script>
         const penIcon = document.getElementById('penIcon');

@@ -164,8 +164,8 @@ function closePen() {
     canvas.classList.remove('active');
     canvas.style.pointerEvents = 'none';
     
-    // Show pen icon (catch window is now invisible, so main window shows the icon)
-    penIcon.style.display = 'block';
+    // Hide pen icon - catch window will handle opening
+    penIcon.style.display = 'none';
     penIcon.style.background = 'rgba(0, 0, 0, 0.5)';
     
     // Explicitly enable click-through for canvas area when pen is closed
@@ -481,7 +481,7 @@ document.addEventListener('keydown', (e) => {
 colorPicker.value = penColor;
 document.getElementById('color').style.background = penColor;
 penIcon.style.background = 'rgba(0, 0, 0, 0.5)';
-penIcon.style.display = 'block'; // Show pen icon initially (catch window is invisible)
+penIcon.style.display = 'none'; // Hidden initially - catch window handles opening
 updateColorPickerPosition();
 
 // Track mouse position globally to manage click-through for pen icon area
