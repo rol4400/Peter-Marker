@@ -32,16 +32,20 @@ function positionPenIcon() {
     const isMac = navigator.platform.toLowerCase().includes('mac');
     
     if (isMac) {
-        // Only reposition when not in drawing mode and not using transform
-        if (!isEnabled && penIcon.style.transform === 'none') {
+        if (isEnabled && savedPenPosition) {
+            // Maintain position using screen-based calculation
+            const rect = penIcon.getBoundingClientRect();
+            const newTop = window.innerHeight - savedPenPosition.distanceFromBottom - rect.height;
+            penIcon.style.bottom = 'auto';
+            penIcon.style.top = `${newTop}px`;
+            toolbarContainer.style.bottom = 'auto';
+            toolbarContainer.style.top = `${newTop}px`;
+        } else if (!isEnabled) {
+            // Normal positioning when not drawing
             penIcon.style.top = 'auto';
             penIcon.style.bottom = '60px';
-            penIcon.style.left = 'auto';
-            penIcon.style.right = '20px';
             toolbarContainer.style.top = 'auto';
             toolbarContainer.style.bottom = '60px';
-            toolbarContainer.style.left = 'auto';
-            toolbarContainer.style.right = '75px';
         }
     } else {
         // Non-Mac: simple bottom positioning
@@ -198,17 +202,10 @@ function closePen() {
     // On Mac, restore normal positioning after closing
     const isMac = navigator.platform.toLowerCase().includes('mac');
     if (isMac) {
-        penIcon.style.transform = 'none';
         penIcon.style.top = 'auto';
-        penIcon.style.left = 'auto';
         penIcon.style.bottom = '60px';
-        penIcon.style.right = '20px';
-        
-        toolbarContainer.style.transform = 'none';
         toolbarContainer.style.top = 'auto';
-        toolbarContainer.style.left = 'auto';
         toolbarContainer.style.bottom = '60px';
-        toolbarContainer.style.right = '75px';
     }
     
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -266,25 +263,23 @@ function toggleDrawing() {
     // Set transition flag to prevent any repositioning
     isTransitioning = true;
     
-    // On Mac, save the current screen position BEFORE changing state
+    // On Mac, calculate position from screen bottom that works in both modes
     if (isMac && !isEnabled) {
+        // Get current position and calculate distance from screen bottom
         const rect = penIcon.getBoundingClientRect();
-        savedPenPosition = { top: rect.top, left: rect.left };
+        const screenHeight = screen.height;
+        const distanceFromScreenBottom = screenHeight - rect.bottom;
         
-        // Use transform to position at exact screen coordinates
-        penIcon.style.position = 'fixed';
-        penIcon.style.top = '0px';
+        // Use this distance consistently
+        savedPenPosition = { distanceFromBottom: distanceFromScreenBottom };
+        
+        // Calculate top position based on current viewport height and saved distance
+        const newTop = window.innerHeight - distanceFromScreenBottom - rect.height;
+        
         penIcon.style.bottom = 'auto';
-        penIcon.style.left = '0px';
-        penIcon.style.right = 'auto';
-        penIcon.style.transform = `translate(${savedPenPosition.left}px, ${savedPenPosition.top}px)`;
-        
-        toolbarContainer.style.position = 'fixed';
-        toolbarContainer.style.top = '0px';
+        penIcon.style.top = `${newTop}px`;
         toolbarContainer.style.bottom = 'auto';
-        toolbarContainer.style.left = '0px';
-        toolbarContainer.style.right = 'auto';
-        toolbarContainer.style.transform = `translate(${savedPenPosition.left - 55}px, ${savedPenPosition.top}px)`;
+        toolbarContainer.style.top = `${newTop}px`;
     }
     
     isEnabled = !isEnabled;
