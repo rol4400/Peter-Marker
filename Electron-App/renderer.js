@@ -309,6 +309,23 @@ function toggleDrawing() {
 // Event listeners for pen icon
 penIcon.addEventListener('click', toggleDrawing);
 
+// Handle touch on pen icon - disable click-through immediately
+penIcon.addEventListener('touchstart', (e) => {
+    if (!isEnabled) {
+        window.electronAPI.setIgnoreMouseEvents(false);
+    }
+}, { passive: true });
+
+penIcon.addEventListener('touchend', (e) => {
+    // Don't re-enable click-through immediately after touch
+    // Wait a bit to allow the click event to fire
+    setTimeout(() => {
+        if (!isEnabled) {
+            window.electronAPI.setIgnoreMouseEvents(true);
+        }
+    }, 300);
+}, { passive: true });
+
 // Handle mouse enter/leave on pen icon to disable click-through when hovering
 penIcon.addEventListener('mouseenter', () => {
     if (!isEnabled) {
@@ -321,6 +338,21 @@ penIcon.addEventListener('mouseleave', () => {
         window.electronAPI.setIgnoreMouseEvents(true);
     }
 });
+
+// Handle touch on toolbar
+toolbarContainer.addEventListener('touchstart', (e) => {
+    if (!isEnabled) {
+        window.electronAPI.setIgnoreMouseEvents(false);
+    }
+}, { passive: true });
+
+toolbarContainer.addEventListener('touchend', (e) => {
+    setTimeout(() => {
+        if (!isEnabled) {
+            window.electronAPI.setIgnoreMouseEvents(true);
+        }
+    }, 300);
+}, { passive: true });
 
 // Handle mouse enter/leave on toolbar
 toolbarContainer.addEventListener('mouseenter', () => {
@@ -531,6 +563,13 @@ window.electronAPI.onClearCanvas(() => {
 // Listen for display changes (fullscreen, taskbar hide, resolution change)
 window.electronAPI.onDisplayChanged(() => {
     resizeCanvas();
+    
+    // Reset saved position on display change (monitor switch, resolution change)
+    const isMac = navigator.platform.toLowerCase().includes('mac');
+    if (isMac && !isEnabled) {
+        savedPenPosition = null; // Force recalculation on next open
+    }
+    
     positionPenIcon();
 });
 
