@@ -389,6 +389,10 @@ ipcMain.on('close-drawing', () => {
     }
 });
 
+ipcMain.on('toggle-drawing', () => {
+    toggleDrawing();
+});
+
 ipcMain.on('open-drawing', () => {
     if (!isDrawingEnabled) {
         isDrawingEnabled = true;

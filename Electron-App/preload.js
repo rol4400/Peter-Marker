@@ -10,5 +10,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     setIgnoreMouseEvents: (ignore) => ipcRenderer.send('set-ignore-mouse-events', ignore),
     closeDrawing: () => ipcRenderer.send('close-drawing'),
     openDrawing: () => ipcRenderer.send('open-drawing'),
+    toggleDrawing: () => ipcRenderer.send('toggle-drawing'),
     forwardKey: (keyCode) => ipcRenderer.send('forward-key', keyCode)
 });
