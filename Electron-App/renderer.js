@@ -305,9 +305,7 @@ function toggleDrawing() {
     toggleToolbar();
     
     // Clear transition flag after window state change completes
-    setTimeout(() => {
-        isTransitioning = false;
-    }, 500);
+    isTransitioning = false;
 }
 
 // Event listeners for pen icon
@@ -423,7 +421,16 @@ canvas.addEventListener('touchstart', (e) => {
         closeColorPicker();
     }
     
-    startDrawing(e.touches[0]);
+    const touch = e.touches[0];
+    // Detect palm touch by large contact area
+    const isPalmTouch = (touch.radiusX > 20 || touch.radiusY > 20);
+    
+    if (isPalmTouch) {
+        // Temporarily enable erasing for palm touches
+        isErasing = true;
+    }
+    
+    startDrawing(touch);
 });
 
 canvas.addEventListener('touchmove', (e) => {
@@ -454,8 +461,21 @@ canvas.addEventListener('touchmove', (e) => {
     isErasing = wasErasing;
 });
 
-canvas.addEventListener('touchend', stopDrawing);
-canvas.addEventListener('touchcancel', stopDrawing);
+canvas.addEventListener('touchend', (e) => {
+    stopDrawing();
+    // Reset erasing state after palm touch ends (if it was auto-enabled)
+    if (isErasing && !document.getElementById('eraser').style.background.includes('255, 0, 0')) {
+        isErasing = false;
+    }
+});
+
+canvas.addEventListener('touchcancel', (e) => {
+    stopDrawing();
+    // Reset erasing state after palm touch cancels
+    if (isErasing && !document.getElementById('eraser').style.background.includes('255, 0, 0')) {
+        isErasing = false;
+    }
+});
 
 document.addEventListener('touchmove', (e) => {
     if (isDrawing && isEnabled) {
