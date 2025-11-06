@@ -191,8 +191,8 @@ function closePen() {
     canvas.classList.remove('active');
     canvas.style.pointerEvents = 'none';
     
-    // Hide close icon - pen icon window will be shown instead
-    penIcon.style.display = 'none';
+    penIcon.style.background = 'rgba(0, 0, 0, 0.5)';
+    penIcon.style.pointerEvents = 'auto';
     
     // On Mac, restore normal positioning after closing
     const isMac = navigator.platform.toLowerCase().includes('mac');
@@ -236,8 +236,6 @@ function openPen() {
     canvas.classList.add('active');
     canvas.style.pointerEvents = 'auto';
     
-    // Show close (X) icon in main window
-    penIcon.style.display = 'block';
     penIcon.style.background = 'rgba(255, 0, 0, 0.5)';
     penIcon.style.pointerEvents = 'auto';
     

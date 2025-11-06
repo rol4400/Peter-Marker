@@ -4,7 +4,6 @@ const path = require('path');
 const fs = require('fs');
 
 let mainWindow;
-let penIconWindow;
 let tray;
 let isDrawingEnabled = false;
 
@@ -79,77 +78,6 @@ function createWindow() {
     screen.on('display-removed', updateWindowBounds);
 }
 
-function createPenIconWindow() {
-    const cursorPoint = screen.getCursorScreenPoint();
-    const currentDisplay = screen.getDisplayNearestPoint(cursorPoint);
-    const { x: displayX, y: displayY, width: displayWidth, height: displayHeight } = currentDisplay.bounds;
-    
-    // Create small window for pen icon (60x60 positioned at bottom-right)
-    const windowOptions = {
-        width: 60,
-        height: 60,
-        x: displayX + displayWidth - 80,
-        y: displayY + displayHeight - 80,
-        transparent: true,
-        frame: false,
-        alwaysOnTop: true,
-        hasShadow: false,
-        skipTaskbar: true,
-        resizable: false,
-        movable: false,
-        minimizable: false,
-        maximizable: false,
-        fullscreenable: false,
-        focusable: false,
-        backgroundColor: '#00000000',
-        webPreferences: {
-            nodeIntegration: false,
-            contextIsolation: true,
-            preload: path.join(__dirname, 'preload.js')
-        }
-    };
-    
-    // On macOS, use vibrancy for proper transparency
-    if (process.platform === 'darwin') {
-        windowOptions.vibrancy = 'under-window';
-    }
-    
-    penIconWindow = new BrowserWindow(windowOptions);
-    
-    penIconWindow.setAlwaysOnTop(true, 'screen-saver');
-    penIconWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-    
-    if (process.platform === 'darwin') {
-        penIconWindow.setWindowButtonVisibility(false);
-    }
-    
-    // Make transparent areas of the window click-through
-    penIconWindow.setIgnoreMouseEvents(true, { forward: true });
-    
-    penIconWindow.loadFile('pen-icon.html');
-    
-    // After content loads, set up mouse event handling for the pen icon specifically
-    penIconWindow.webContents.on('did-finish-load', () => {
-        // Inject script to handle mouse events on the pen icon specifically
-        penIconWindow.webContents.executeJavaScript(`
-            const penIcon = document.getElementById('penIcon');
-            penIcon.addEventListener('mouseenter', () => {
-                window.electronAPI.setPenIconClickable(true);
-            });
-            penIcon.addEventListener('mouseleave', () => {
-                window.electronAPI.setPenIconClickable(false);
-            });
-        `);
-    });
-    
-    penIconWindow.on('close', (event) => {
-        if (!app.isQuitting) {
-            event.preventDefault();
-            penIconWindow.hide();
-        }
-    });
-}
-
 function updateWindowBounds() {
     if (mainWindow) {
         // Get the display where the cursor currently is
@@ -164,11 +92,6 @@ function updateWindowToDisplay(display) {
     if (mainWindow) {
         const { x, y, width, height } = display.bounds;
         mainWindow.setBounds({ x, y, width, height });
-        
-        // Also move pen icon window to new display
-        if (penIconWindow && !isDrawingEnabled) {
-            penIconWindow.setPosition(x + width - 80, y + height - 80);
-        }
         
         // Notify renderer to reposition UI elements
         mainWindow.webContents.send('display-changed');
@@ -317,11 +240,6 @@ function toggleDrawing() {
     
     if (mainWindow) {
         if (isDrawingEnabled) {
-            // Hide pen icon window when drawing
-            if (penIconWindow) {
-                penIconWindow.hide();
-            }
-            
             // When drawing is enabled, capture all mouse events
             mainWindow.setIgnoreMouseEvents(false);
             
@@ -337,11 +255,6 @@ function toggleDrawing() {
             
             mainWindow.show();
         } else {
-            // Show pen icon window when not drawing
-            if (penIconWindow) {
-                penIconWindow.show();
-            }
-            
             // When drawing is disabled, pass through clicks
             mainWindow.setIgnoreMouseEvents(true);
             
@@ -416,16 +329,6 @@ ipcMain.on('close-drawing', () => {
 
 ipcMain.on('toggle-drawing', () => {
     toggleDrawing();
-});
-
-ipcMain.on('set-pen-icon-clickable', (event, clickable) => {
-    if (penIconWindow) {
-        if (clickable) {
-            penIconWindow.setIgnoreMouseEvents(false);
-        } else {
-            penIconWindow.setIgnoreMouseEvents(true, { forward: true });
-        }
-    }
 });
 
 ipcMain.on('open-drawing', () => {
@@ -656,7 +559,6 @@ app.whenReady().then(() => {
     }
     
     createWindow();
-    createPenIconWindow();
     createTray();
     
     // Start tracking mouse to follow active display
