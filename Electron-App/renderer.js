@@ -206,6 +206,9 @@ function closePen() {
         toolbarContainer.style.bottom = `${savedPenPosition.originalBottom}px`;
     }
     
+    // Explicitly enable click-through for canvas area when pen is closed
+    window.electronAPI.setIgnoreMouseEvents(true);
+    
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawingHistory = [];
     currentHistoryIndex = -1;
@@ -311,26 +314,12 @@ penIcon.addEventListener('click', toggleDrawing);
 
 // Handle touch on pen icon - disable click-through immediately
 penIcon.addEventListener('touchstart', (e) => {
-    if (!isEnabled) {
-        window.electronAPI.setIgnoreMouseEvents(false);
-    }
-}, { passive: true });
-
-penIcon.addEventListener('touchend', (e) => {
-    // Don't re-enable click-through immediately after touch
-    // Wait a bit to allow the click event to fire
-    setTimeout(() => {
-        if (!isEnabled) {
-            window.electronAPI.setIgnoreMouseEvents(true);
-        }
-    }, 300);
+    window.electronAPI.setIgnoreMouseEvents(false);
 }, { passive: true });
 
 // Handle mouse enter/leave on pen icon to disable click-through when hovering
 penIcon.addEventListener('mouseenter', () => {
-    if (!isEnabled) {
-        window.electronAPI.setIgnoreMouseEvents(false);
-    }
+    window.electronAPI.setIgnoreMouseEvents(false);
 });
 
 penIcon.addEventListener('mouseleave', () => {
@@ -341,24 +330,12 @@ penIcon.addEventListener('mouseleave', () => {
 
 // Handle touch on toolbar
 toolbarContainer.addEventListener('touchstart', (e) => {
-    if (!isEnabled) {
-        window.electronAPI.setIgnoreMouseEvents(false);
-    }
-}, { passive: true });
-
-toolbarContainer.addEventListener('touchend', (e) => {
-    setTimeout(() => {
-        if (!isEnabled) {
-            window.electronAPI.setIgnoreMouseEvents(true);
-        }
-    }, 300);
+    window.electronAPI.setIgnoreMouseEvents(false);
 }, { passive: true });
 
 // Handle mouse enter/leave on toolbar
 toolbarContainer.addEventListener('mouseenter', () => {
-    if (!isEnabled) {
-        window.electronAPI.setIgnoreMouseEvents(false);
-    }
+    window.electronAPI.setIgnoreMouseEvents(false);
 });
 
 toolbarContainer.addEventListener('mouseleave', () => {
