@@ -32,18 +32,21 @@ function positionPenIcon() {
     const isMac = navigator.platform.toLowerCase().includes('mac');
     
     if (isMac) {
-        if (isEnabled && savedPenPosition) {
-            // Keep the locked position (already adjusted for kiosk mode)
-            penIcon.style.bottom = 'auto';
-            penIcon.style.top = `${savedPenPosition.top}px`;
-            toolbarContainer.style.bottom = 'auto';
-            toolbarContainer.style.top = `${savedPenPosition.top}px`;
-        } else if (!isEnabled && savedPenPosition) {
-            // Use saved original position after first open/close
-            penIcon.style.top = 'auto';
-            penIcon.style.bottom = `${savedPenPosition.originalBottom}px`;
-            toolbarContainer.style.top = 'auto';
-            toolbarContainer.style.bottom = `${savedPenPosition.originalBottom}px`;
+        // Once position is saved, never recalculate - prevents drift
+        if (savedPenPosition) {
+            if (isEnabled) {
+                // Keep the locked position (already adjusted for kiosk mode)
+                penIcon.style.bottom = 'auto';
+                penIcon.style.top = `${savedPenPosition.top}px`;
+                toolbarContainer.style.bottom = 'auto';
+                toolbarContainer.style.top = `${savedPenPosition.top}px`;
+            } else {
+                // Use saved original position after first open/close
+                penIcon.style.top = 'auto';
+                penIcon.style.bottom = `${savedPenPosition.originalBottom}px`;
+                toolbarContainer.style.top = 'auto';
+                toolbarContainer.style.bottom = `${savedPenPosition.originalBottom}px`;
+            }
         } else if (!isEnabled) {
             // Initial positioning before first open
             penIcon.style.top = 'auto';
@@ -244,6 +247,9 @@ function openPen() {
     penIcon.style.background = 'rgba(255, 0, 0, 0.5)';
     penIcon.style.pointerEvents = 'auto'; // Ensure pen icon is always clickable
     
+    // Keep pen icon area clickable
+    window.electronAPI.setIgnoreMouseEvents(false);
+    
     const buttons = toolbarContainer.children;
     for (let i = 0; i < buttons.length - 1; i++) {
         buttons[i].style.transform = 'scale(1)';
@@ -305,7 +311,9 @@ function toggleDrawing() {
     toggleToolbar();
     
     // Clear transition flag after window state change completes
-    isTransitioning = false;
+    setTimeout(() => {
+        isTransitioning = false;
+    }, 500);
 }
 
 // Event listeners for pen icon
