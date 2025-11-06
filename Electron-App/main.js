@@ -84,12 +84,12 @@ function createCatchWindow() {
     const currentDisplay = screen.getDisplayNearestPoint(cursorPoint);
     const { x: displayX, y: displayY, width: displayWidth, height: displayHeight } = currentDisplay.bounds;
     
-    // Create a 100x100 window in bottom-right corner to catch clicks
+    // Create a 32x32 window that fits inside the circular pen icon to hide any white background
     const windowOptions = {
-        width: 100,
-        height: 100,
-        x: displayX + displayWidth - 100,
-        y: displayY + displayHeight - 100,
+        width: 32,
+        height: 32,
+        x: displayX + displayWidth - 48,
+        y: displayY + displayHeight - 48,
         transparent: true,
         frame: false,
         alwaysOnTop: true,
@@ -151,7 +151,7 @@ function createCatchWindow() {
         const currentDisplay = screen.getDisplayNearestPoint(cursorPoint);
         const { x, y, width, height } = currentDisplay.bounds;
         // Reposition after load to match the positioning logic used after open/close
-        catchWindow.setPosition(x + width - 100, y + height - 100);
+        catchWindow.setPosition(x + width - 48, y + height - 48);
         
         // Force transparency on macOS after load to handle multi-monitor issues
         if (process.platform === 'darwin') {
@@ -193,9 +193,9 @@ function updateWindowToDisplay(display) {
         const { x, y, width, height } = display.bounds;
         mainWindow.setBounds({ x, y, width, height });
         
-        // Also move catch window
+        // Also move catch window (32x32 centered at 48px from edges to fit inside icon)
         if (catchWindow && !isDrawingEnabled) {
-            catchWindow.setPosition(x + width - 100, y + height - 100);
+            catchWindow.setPosition(x + width - 48, y + height - 48);
             
             // Force transparency refresh on macOS when moving between displays
             if (process.platform === 'darwin') {
