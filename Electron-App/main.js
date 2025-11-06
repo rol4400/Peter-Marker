@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 
 let mainWindow;
+let catchWindow; // Invisible window to catch clicks on pen icon area
 let tray;
 let isDrawingEnabled = false;
 
@@ -78,6 +79,53 @@ function createWindow() {
     screen.on('display-removed', updateWindowBounds);
 }
 
+function createCatchWindow() {
+    const cursorPoint = screen.getCursorScreenPoint();
+    const currentDisplay = screen.getDisplayNearestPoint(cursorPoint);
+    const { x: displayX, y: displayY, width: displayWidth, height: displayHeight } = currentDisplay.bounds;
+    
+    // Create a 100x100 invisible window in bottom-right corner to catch clicks
+    catchWindow = new BrowserWindow({
+        width: 100,
+        height: 100,
+        x: displayX + displayWidth - 100,
+        y: displayY + displayHeight - 100,
+        transparent: true,
+        frame: false,
+        alwaysOnTop: true,
+        hasShadow: false,
+        skipTaskbar: true,
+        resizable: false,
+        movable: false,
+        minimizable: false,
+        maximizable: false,
+        fullscreenable: false,
+        focusable: false,
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            preload: path.join(__dirname, 'preload.js')
+        }
+    });
+    
+    catchWindow.setAlwaysOnTop(true, 'screen-saver', 1); // One level below main window
+    catchWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    
+    if (process.platform === 'darwin') {
+        catchWindow.setWindowButtonVisibility(false);
+    }
+    
+    // Load a simple HTML that just calls toggleDrawing when clicked
+    catchWindow.loadFile('catch-window.html');
+    
+    catchWindow.on('close', (event) => {
+        if (!app.isQuitting) {
+            event.preventDefault();
+            catchWindow.hide();
+        }
+    });
+}
+
 function updateWindowBounds() {
     if (mainWindow) {
         // Get the display where the cursor currently is
@@ -92,6 +140,11 @@ function updateWindowToDisplay(display) {
     if (mainWindow) {
         const { x, y, width, height } = display.bounds;
         mainWindow.setBounds({ x, y, width, height });
+        
+        // Also move catch window
+        if (catchWindow && !isDrawingEnabled) {
+            catchWindow.setPosition(x + width - 100, y + height - 100);
+        }
         
         // Notify renderer to reposition UI elements
         mainWindow.webContents.send('display-changed');
@@ -240,6 +293,11 @@ function toggleDrawing() {
     
     if (mainWindow) {
         if (isDrawingEnabled) {
+            // Hide catch window when drawing
+            if (catchWindow) {
+                catchWindow.hide();
+            }
+            
             // When drawing is enabled, capture all mouse events
             mainWindow.setIgnoreMouseEvents(false);
             
@@ -255,6 +313,11 @@ function toggleDrawing() {
             
             mainWindow.show();
         } else {
+            // Show catch window when not drawing
+            if (catchWindow) {
+                catchWindow.show();
+            }
+            
             // When drawing is disabled, pass through clicks
             mainWindow.setIgnoreMouseEvents(true);
             
@@ -558,6 +621,7 @@ app.whenReady().then(() => {
     }
     
     createWindow();
+    createCatchWindow();
     createTray();
     
     // Start tracking mouse to follow active display

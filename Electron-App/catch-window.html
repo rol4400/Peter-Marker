@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html style="background: transparent;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catch Window</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            background: transparent;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        body {
+            -webkit-app-region: no-drag;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        // Entire window area triggers toggleDrawing
+        document.body.addEventListener('click', () => {
+            window.electronAPI.toggleDrawing();
+        });
+        
+        document.body.addEventListener('touchstart', () => {
+            window.electronAPI.toggleDrawing();
+        });
+    </script>
+</body>
+</html>
