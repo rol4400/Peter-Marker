@@ -33,14 +33,14 @@ function positionPenIcon() {
     
     if (isMac) {
         if (isEnabled && savedPenPosition) {
-            // Keep the locked position
+            // Keep the locked position (already adjusted for kiosk mode)
             console.log('positionPenIcon during drawing - using saved top:', savedPenPosition.top, 'current window.innerHeight:', window.innerHeight);
             penIcon.style.bottom = 'auto';
             penIcon.style.top = `${savedPenPosition.top}px`;
             toolbarContainer.style.bottom = 'auto';
             toolbarContainer.style.top = `${savedPenPosition.top}px`;
         } else if (!isEnabled) {
-            // Normal positioning when not drawing
+            // Normal positioning when not drawing (window includes menu bar offset)
             penIcon.style.top = 'auto';
             penIcon.style.bottom = '60px';
             toolbarContainer.style.top = 'auto';
@@ -262,23 +262,28 @@ function toggleDrawing() {
     // Set transition flag to prevent any repositioning
     isTransitioning = true;
     
-    // On Mac, just lock the current pixel position - don't recalculate anything
+    // On Mac, adjust for menu bar height difference between normal and kiosk mode
     if (isMac && !isEnabled) {
         // Get the EXACT current position
         const rect = penIcon.getBoundingClientRect();
         
         console.log('Before opening - rect.top:', rect.top, 'rect.bottom:', rect.bottom, 'window.innerHeight:', window.innerHeight);
         
-        // Lock this exact top position
-        savedPenPosition = { top: rect.top };
+        // In kiosk mode, window starts at 0,0 (behind menu bar)
+        // In normal mode, window starts below menu bar (~25px)
+        // So subtract menu bar height to maintain same screen position
+        const menuBarHeight = 25; // macOS menu bar height
+        const adjustedTop = rect.top - menuBarHeight;
         
-        // Set to exact pixel position from top
+        savedPenPosition = { top: adjustedTop };
+        
+        // Set to adjusted pixel position from top
         penIcon.style.bottom = 'auto';
-        penIcon.style.top = `${rect.top}px`;
+        penIcon.style.top = `${adjustedTop}px`;
         toolbarContainer.style.bottom = 'auto';
-        toolbarContainer.style.top = `${rect.top}px`;
+        toolbarContainer.style.top = `${adjustedTop}px`;
         
-        console.log('Set position to:', rect.top);
+        console.log('Set position to:', adjustedTop, '(rect.top', rect.top, '- menuBarHeight', menuBarHeight, ')');
     }
     
     isEnabled = !isEnabled;
