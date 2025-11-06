@@ -110,11 +110,8 @@ function createCatchWindow() {
         }
     };
     
-    // On macOS, add transparency fixes for external monitors
-    if (process.platform === 'darwin') {
-        windowOptions.visualEffectState = 'active';
-        windowOptions.vibrancy = 'under-window';
-    }
+    // On macOS, don't use vibrancy as it can cause white backgrounds
+    // Keep backgroundColor: '#00000000' for transparency
     
     catchWindow = new BrowserWindow(windowOptions);
     
@@ -123,6 +120,8 @@ function createCatchWindow() {
     
     if (process.platform === 'darwin') {
         catchWindow.setWindowButtonVisibility(false);
+        // Ensure transparency is applied
+        catchWindow.setBackgroundColor('#00000000');
     }
     
     // Load a simple HTML that just calls toggleDrawing when clicked
@@ -167,7 +166,11 @@ function updateWindowToDisplay(display) {
         // Also move catch window
         if (catchWindow && !isDrawingEnabled) {
             catchWindow.setPosition(x + width - 100, y + height - 100);
-
+            
+            // Refresh transparency on macOS when moving between displays
+            if (process.platform === 'darwin') {
+                catchWindow.setBackgroundColor('#00000000');
+            }
         }
         
         // Notify renderer to reposition UI elements
