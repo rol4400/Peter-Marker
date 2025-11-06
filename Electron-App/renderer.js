@@ -172,6 +172,19 @@ function toggleToolbar() {
 }
 
 function closePen() {
+    // Disable transitions temporarily to prevent flickering
+    penIcon.style.transition = 'none';
+    toolbarContainer.style.transition = 'none';
+    
+    // Reposition FIRST for non-kiosk mode (will use larger offset on macOS)
+    positionPenIcon();
+    
+    // Re-enable transitions after a frame
+    requestAnimationFrame(() => {
+        penIcon.style.transition = '';
+        toolbarContainer.style.transition = '';
+    });
+    
     // Remove active class from canvas to make it click-through
     canvas.classList.remove('active');
     canvas.style.pointerEvents = 'none';
@@ -199,9 +212,6 @@ function closePen() {
     colorPicker.style.left = '-100px';
     colorPicker.style.top = '-100px';
     eraserCursor.style.display = 'none';
-
-    // Reposition for non-kiosk mode (will use larger offset on macOS)
-    positionPenIcon();
     
     penIcon.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="pointer-events: none;">
         <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
@@ -209,14 +219,24 @@ function closePen() {
 }
 
 function openPen() {
+    // Disable transitions temporarily to prevent flickering
+    penIcon.style.transition = 'none';
+    toolbarContainer.style.transition = 'none';
+    
+    // Reposition FIRST for kiosk mode (will use smaller offset on macOS)
+    positionPenIcon();
+    
+    // Re-enable transitions after a frame
+    requestAnimationFrame(() => {
+        penIcon.style.transition = '';
+        toolbarContainer.style.transition = '';
+    });
+    
     // Add active class to canvas to make it interactive
     canvas.classList.add('active');
     canvas.style.pointerEvents = 'auto';
     penIcon.style.background = 'rgba(255, 0, 0, 0.5)';
     penIcon.style.pointerEvents = 'auto'; // Ensure pen icon is always clickable
-    
-    // Reposition for kiosk mode (will use smaller offset on macOS)
-    positionPenIcon();
     
     const buttons = toolbarContainer.children;
     for (let i = 0; i < buttons.length - 1; i++) {
