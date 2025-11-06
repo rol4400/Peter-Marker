@@ -30,7 +30,7 @@ function positionPenIcon() {
         // On first call when not in kiosk mode, calculate and store the fixed position
         if (fixedBottomPosition === null && !isEnabled) {
             // Set initial position: 60px from bottom in non-kiosk mode
-            fixedBottomPosition = 60;
+            fixedBottomPosition = 100;
         }
         
         // Always use the same bottom offset regardless of viewport height changes
