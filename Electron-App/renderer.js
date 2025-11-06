@@ -273,7 +273,7 @@ function toggleDrawing() {
         // In normal mode, window starts below menu bar (~25px)
         // So subtract menu bar height to maintain same screen position
         const menuBarHeight = 25; // macOS menu bar height
-        const adjustedTop = rect.top - menuBarHeight;
+        const adjustedTop = rect.top + menuBarHeight;
         
         savedPenPosition = { top: adjustedTop };
         
