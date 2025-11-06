@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onDisplayChanged: (callback) => ipcRenderer.on('display-changed', callback),
     onDownloadProgress: (callback) => ipcRenderer.on('download-progress', (event, percent) => callback(percent)),
     setIgnoreMouseEvents: (ignore) => ipcRenderer.send('set-ignore-mouse-events', ignore),
+    setPenIconClickable: (clickable) => ipcRenderer.send('set-pen-icon-clickable', clickable),
     closeDrawing: () => ipcRenderer.send('close-drawing'),
     openDrawing: () => ipcRenderer.send('open-drawing'),
     toggleDrawing: () => ipcRenderer.send('toggle-drawing'),

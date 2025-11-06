@@ -116,7 +116,24 @@ function createPenIconWindow() {
         penIconWindow.setWindowButtonVisibility(false);
     }
     
+    // Make transparent areas of the window click-through
+    penIconWindow.setIgnoreMouseEvents(true, { forward: true });
+    
     penIconWindow.loadFile('pen-icon.html');
+    
+    // After content loads, set up mouse event handling for the pen icon
+    penIconWindow.webContents.on('did-finish-load', () => {
+        // Inject script to handle mouse events on the pen icon specifically
+        penIconWindow.webContents.executeJavaScript(`
+            const penIcon = document.getElementById('penIcon');
+            penIcon.addEventListener('mouseenter', () => {
+                window.electronAPI.setPenIconClickable(true);
+            });
+            penIcon.addEventListener('mouseleave', () => {
+                window.electronAPI.setPenIconClickable(false);
+            });
+        `);
+    });
     
     penIconWindow.on('close', (event) => {
         if (!app.isQuitting) {
@@ -392,6 +409,16 @@ ipcMain.on('close-drawing', () => {
 
 ipcMain.on('toggle-drawing', () => {
     toggleDrawing();
+});
+
+ipcMain.on('set-pen-icon-clickable', (event, clickable) => {
+    if (penIconWindow) {
+        if (clickable) {
+            penIconWindow.setIgnoreMouseEvents(false);
+        } else {
+            penIconWindow.setIgnoreMouseEvents(true, { forward: true });
+        }
+    }
 });
 
 ipcMain.on('open-drawing', () => {
