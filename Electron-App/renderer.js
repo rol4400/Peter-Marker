@@ -190,11 +190,9 @@ function closePen() {
     // Remove active class from canvas to make it click-through
     canvas.classList.remove('active');
     canvas.style.pointerEvents = 'none';
-    penIcon.style.background = 'rgba(0, 0, 0, 0.5)';
-    penIcon.style.pointerEvents = 'auto'; // Ensure pen icon is always clickable
     
-    // Keep the pen icon area clickable by disabling click-through
-    window.electronAPI.setIgnoreMouseEvents(false);
+    // Hide close icon - pen icon window will be shown instead
+    penIcon.style.display = 'none';
     
     // On Mac, restore normal positioning after closing
     const isMac = navigator.platform.toLowerCase().includes('mac');
@@ -237,8 +235,11 @@ function openPen() {
     // Add active class to canvas to make it interactive
     canvas.classList.add('active');
     canvas.style.pointerEvents = 'auto';
+    
+    // Show close (X) icon in main window
+    penIcon.style.display = 'block';
     penIcon.style.background = 'rgba(255, 0, 0, 0.5)';
-    penIcon.style.pointerEvents = 'auto'; // Ensure pen icon is always clickable
+    penIcon.style.pointerEvents = 'auto';
     
     // Keep pen icon area clickable
     window.electronAPI.setIgnoreMouseEvents(false);

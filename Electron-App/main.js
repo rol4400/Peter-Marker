@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 
 let mainWindow;
+let penIconWindow;
 let tray;
 let isDrawingEnabled = false;
 
@@ -78,6 +79,52 @@ function createWindow() {
     screen.on('display-removed', updateWindowBounds);
 }
 
+function createPenIconWindow() {
+    const cursorPoint = screen.getCursorScreenPoint();
+    const currentDisplay = screen.getDisplayNearestPoint(cursorPoint);
+    const { x: displayX, y: displayY, width: displayWidth, height: displayHeight } = currentDisplay.bounds;
+    
+    // Create small window for pen icon (60x60 positioned at bottom-right)
+    penIconWindow = new BrowserWindow({
+        width: 60,
+        height: 60,
+        x: displayX + displayWidth - 80,
+        y: displayY + displayHeight - 80,
+        transparent: true,
+        frame: false,
+        alwaysOnTop: true,
+        hasShadow: false,
+        skipTaskbar: true,
+        resizable: false,
+        movable: false,
+        minimizable: false,
+        maximizable: false,
+        fullscreenable: false,
+        focusable: false,
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            preload: path.join(__dirname, 'preload.js')
+        }
+    });
+    
+    penIconWindow.setAlwaysOnTop(true, 'screen-saver');
+    penIconWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    
+    if (process.platform === 'darwin') {
+        penIconWindow.setWindowButtonVisibility(false);
+    }
+    
+    penIconWindow.loadFile('pen-icon.html');
+    
+    penIconWindow.on('close', (event) => {
+        if (!app.isQuitting) {
+            event.preventDefault();
+            penIconWindow.hide();
+        }
+    });
+}
+
 function updateWindowBounds() {
     if (mainWindow) {
         // Get the display where the cursor currently is
@@ -92,6 +139,11 @@ function updateWindowToDisplay(display) {
     if (mainWindow) {
         const { x, y, width, height } = display.bounds;
         mainWindow.setBounds({ x, y, width, height });
+        
+        // Also move pen icon window to new display
+        if (penIconWindow && !isDrawingEnabled) {
+            penIconWindow.setPosition(x + width - 80, y + height - 80);
+        }
         
         // Notify renderer to reposition UI elements
         mainWindow.webContents.send('display-changed');
@@ -240,6 +292,11 @@ function toggleDrawing() {
     
     if (mainWindow) {
         if (isDrawingEnabled) {
+            // Hide pen icon window when drawing
+            if (penIconWindow) {
+                penIconWindow.hide();
+            }
+            
             // When drawing is enabled, capture all mouse events
             mainWindow.setIgnoreMouseEvents(false);
             
@@ -255,6 +312,11 @@ function toggleDrawing() {
             
             mainWindow.show();
         } else {
+            // Show pen icon window when not drawing
+            if (penIconWindow) {
+                penIconWindow.show();
+            }
+            
             // When drawing is disabled, pass through clicks
             mainWindow.setIgnoreMouseEvents(true);
             
@@ -555,6 +617,7 @@ app.whenReady().then(() => {
     }
     
     createWindow();
+    createPenIconWindow();
     createTray();
     
     // Start tracking mouse to follow active display
