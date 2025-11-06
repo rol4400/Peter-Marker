@@ -6,6 +6,7 @@ let penColor = "#ff0000";
 let drawingHistory = [];
 let currentHistoryIndex = -1;
 let savedPenPosition = null; // Store actual screen position before opening
+let isTransitioning = false; // Prevent repositioning during open/close
 
 // Get DOM elements
 const penIcon = document.getElementById('penIcon');
@@ -23,6 +24,11 @@ function resizeCanvas() {
 
 // Position pen icon and toolbar at actual bottom of viewport
 function positionPenIcon() {
+    // Don't reposition during transitions to prevent flickering
+    if (isTransitioning) {
+        return;
+    }
+    
     const isMac = navigator.platform.toLowerCase().includes('mac');
     
     if (isMac) {
@@ -252,6 +258,9 @@ function openPen() {
 function toggleDrawing() {
     const isMac = navigator.platform.toLowerCase().includes('mac');
     
+    // Set transition flag to prevent any repositioning
+    isTransitioning = true;
+    
     // On Mac, save the current screen position BEFORE changing state
     if (isMac && !isEnabled) {
         const rect = penIcon.getBoundingClientRect();
@@ -276,6 +285,11 @@ function toggleDrawing() {
     }
     
     toggleToolbar();
+    
+    // Clear transition flag after window state change completes
+    setTimeout(() => {
+        isTransitioning = false;
+    }, 300);
 }
 
 // Event listeners for pen icon
