@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, screen, ipcMain, globalShortcut } = require('electron');
+const { app, BrowserWindow, Tray, Menu, screen, ipcMain, globalShortcut, shell } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
@@ -572,25 +572,75 @@ autoUpdater.on('update-downloaded', (info) => {
         progressWindow = null;
     }
     
-    // Show dialog for both platforms
     const { dialog } = require('electron');
-    const result = dialog.showMessageBoxSync({
-        type: 'info',
-        title: 'Update Ready',
-        message: `Peter Marker v${info.version} has been downloaded and is ready to install.`,
-        detail: 'Would you like to quit and install the update now?',
-        buttons: ['Quit and Install', 'Later'],
-        defaultId: 0,
-        cancelId: 1
-    });
     
-    if (result === 0) {
-        // User chose to install now
-        app.isQuitting = true;
-        setImmediate(() => {
-            app.removeAllListeners('window-all-closed');
-            autoUpdater.quitAndInstall(false, true);
+    if (process.platform === 'darwin') {
+        // macOS: For unsigned apps, open the DMG manually so user can install
+        const updatePath = path.join(app.getPath('userData'), 'pending-update');
+        
+        // Try to find the downloaded DMG
+        if (fs.existsSync(updatePath)) {
+            const files = fs.readdirSync(updatePath);
+            const dmgFile = files.find(f => f.endsWith('.dmg'));
+            
+            if (dmgFile) {
+                const dmgPath = path.join(updatePath, dmgFile);
+                
+                const result = dialog.showMessageBoxSync({
+                    type: 'info',
+                    title: 'Update Downloaded',
+                    message: `Peter Marker v${info.version} has been downloaded.`,
+                    detail: 'Click "Open Installer" to install the update manually. You may need to right-click the app and select "Open" to bypass Gatekeeper.',
+                    buttons: ['Open Installer', 'Later'],
+                    defaultId: 0,
+                    cancelId: 1
+                });
+                
+                if (result === 0) {
+                    // Open the DMG file
+                    shell.openPath(dmgPath);
+                }
+                return;
+            }
+        }
+        
+        // Fallback: If we can't find the DMG, use standard quit and install
+        const result = dialog.showMessageBoxSync({
+            type: 'info',
+            title: 'Update Ready',
+            message: `Peter Marker v${info.version} has been downloaded.`,
+            detail: 'Would you like to quit and install the update now?',
+            buttons: ['Quit and Install', 'Later'],
+            defaultId: 0,
+            cancelId: 1
         });
+        
+        if (result === 0) {
+            app.isQuitting = true;
+            setImmediate(() => {
+                app.removeAllListeners('window-all-closed');
+                autoUpdater.quitAndInstall(false, true);
+            });
+        }
+    } else {
+        // Windows: Install and restart immediately
+        const result = dialog.showMessageBoxSync({
+            type: 'info',
+            title: 'Update Ready',
+            message: `Peter Marker v${info.version} has been downloaded and is ready to install.`,
+            detail: 'Would you like to quit and install the update now?',
+            buttons: ['Quit and Install', 'Later'],
+            defaultId: 0,
+            cancelId: 1
+        });
+        
+        if (result === 0) {
+            app.isQuitting = true;
+            setImmediate(() => {
+                app.removeAllListeners('window-all-closed');
+                autoUpdater.quitAndInstall(false, true);
+            });
+        }
     }
 });
 
