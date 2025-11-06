@@ -29,7 +29,7 @@ function positionPenIcon() {
         // Calculate position from top instead to avoid dock area confusion
         // Dock is ~80px, so position should be viewportHeight - 100 from top when not in kiosk
         // In kiosk mode, viewportHeight is larger, so same calculation keeps same screen position
-        const targetFromTop = viewportHeight - 90;
+        const targetFromTop = viewportHeight - 80;
         
         penIcon.style.bottom = 'auto';
         penIcon.style.top = `${targetFromTop}px`;
