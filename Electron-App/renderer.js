@@ -314,43 +314,6 @@ function toggleDrawing() {
 // Event listeners for pen icon
 penIcon.addEventListener('click', toggleDrawing);
 
-// Handle touch on pen icon - disable click-through immediately
-penIcon.addEventListener('touchstart', (e) => {
-    window.electronAPI.setIgnoreMouseEvents(false);
-}, { passive: true });
-
-// Handle mouse down on pen icon - disable click-through before click fires
-penIcon.addEventListener('mousedown', () => {
-    window.electronAPI.setIgnoreMouseEvents(false);
-});
-
-// Handle mouse enter/leave on pen icon to disable click-through when hovering
-penIcon.addEventListener('mouseenter', () => {
-    window.electronAPI.setIgnoreMouseEvents(false);
-});
-
-penIcon.addEventListener('mouseleave', () => {
-    if (!isEnabled) {
-        window.electronAPI.setIgnoreMouseEvents(true);
-    }
-});
-
-// Handle touch on toolbar
-toolbarContainer.addEventListener('touchstart', (e) => {
-    window.electronAPI.setIgnoreMouseEvents(false);
-}, { passive: true });
-
-// Handle mouse enter/leave on toolbar
-toolbarContainer.addEventListener('mouseenter', () => {
-    window.electronAPI.setIgnoreMouseEvents(false);
-});
-
-toolbarContainer.addEventListener('mouseleave', () => {
-    if (!isEnabled) {
-        window.electronAPI.setIgnoreMouseEvents(true);
-    }
-});
-
 // Event listeners for toolbar buttons
 document.getElementById('pen').addEventListener('click', () => {
     isEnabled = !isEnabled;

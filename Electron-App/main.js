@@ -37,7 +37,8 @@ function createWindow() {
     });
 
     // Start with click-through enabled so clicks pass to apps below
-    mainWindow.setIgnoreMouseEvents(true);
+    // Use forward:true to respect CSS pointer-events on pen icon
+    mainWindow.setIgnoreMouseEvents(true, { forward: true });
     
     // Start as non-focusable so keys pass through initially
     mainWindow.setFocusable(false);
@@ -256,7 +257,8 @@ function toggleDrawing() {
             mainWindow.show();
         } else {
             // When drawing is disabled, pass through clicks
-            mainWindow.setIgnoreMouseEvents(true);
+            // Use forward:true to respect CSS pointer-events on pen icon
+            mainWindow.setIgnoreMouseEvents(true, { forward: true });
             
             // On macOS, exit kiosk mode and unregister shortcuts
             if (process.platform === 'darwin') {
@@ -288,10 +290,11 @@ function toggleDrawing() {
 
 // IPC handlers
 ipcMain.on('set-ignore-mouse-events', (event, ignore) => {
-    // Allow renderer to control click-through for specific areas (like pen icon)
+    // Always use forward:true to respect CSS pointer-events
+    // This ensures pen icon with pointer-events:auto is always clickable
     if (mainWindow) {
         if (ignore) {
-            mainWindow.setIgnoreMouseEvents(true);
+            mainWindow.setIgnoreMouseEvents(true, { forward: true });
         } else {
             mainWindow.setIgnoreMouseEvents(false);
         }
@@ -302,7 +305,7 @@ ipcMain.on('close-drawing', () => {
     if (isDrawingEnabled) {
         isDrawingEnabled = false;
         if (mainWindow) {
-            mainWindow.setIgnoreMouseEvents(true);
+            mainWindow.setIgnoreMouseEvents(true, { forward: true });
             
             if (process.platform === 'darwin') {
                 unregisterDrawingShortcuts();
