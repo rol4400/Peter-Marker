@@ -191,6 +191,8 @@ function closePen() {
     canvas.classList.remove('active');
     canvas.style.pointerEvents = 'none';
     
+    // Hide pen icon - catch window will handle opening
+    penIcon.style.display = 'none';
     penIcon.style.background = 'rgba(0, 0, 0, 0.5)';
     penIcon.style.pointerEvents = 'auto';
     
@@ -236,6 +238,8 @@ function openPen() {
     canvas.classList.add('active');
     canvas.style.pointerEvents = 'auto';
     
+    // Show pen icon as close button
+    penIcon.style.display = 'block';
     penIcon.style.background = 'rgba(255, 0, 0, 0.5)';
     penIcon.style.pointerEvents = 'auto';
     
@@ -312,8 +316,14 @@ function toggleDrawing() {
     }, 500);
 }
 
-// Event listeners for pen icon
-penIcon.addEventListener('click', toggleDrawing);
+// Event listeners for pen icon - only used for closing, not opening
+// Opening is handled by the catch window
+penIcon.addEventListener('click', (e) => {
+    if (isEnabled) {
+        // Only allow clicking to close when already open
+        toggleDrawing();
+    }
+});
 
 // Event listeners for toolbar buttons
 document.getElementById('pen').addEventListener('click', () => {
@@ -555,6 +565,7 @@ document.addEventListener('keydown', (e) => {
 colorPicker.value = penColor;
 document.getElementById('color').style.background = penColor;
 penIcon.style.background = 'rgba(0, 0, 0, 0.5)';
+penIcon.style.display = 'none'; // Hidden initially - catch window handles opening
 document.getElementById('pen').style.background = 'rgba(0, 0, 0, 0.5)';
 updateColorPickerPosition();
 
