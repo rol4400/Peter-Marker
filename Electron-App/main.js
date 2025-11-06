@@ -363,6 +363,12 @@ ipcMain.on('set-ignore-mouse-events', (event, ignore) => {
 ipcMain.on('close-drawing', () => {
     if (isDrawingEnabled) {
         isDrawingEnabled = false;
+        
+        // Show catch window when closing
+        if (catchWindow) {
+            catchWindow.show();
+        }
+        
         if (mainWindow) {
             mainWindow.setIgnoreMouseEvents(true);
             

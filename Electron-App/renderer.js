@@ -269,8 +269,11 @@ function toggleDrawing() {
     // Set transition flag to prevent any repositioning
     isTransitioning = true;
     
+    isEnabled = !isEnabled;
+    
     // On Mac, adjust for menu bar height difference between normal and kiosk mode
-    if (isMac && !isEnabled) {
+    // Do this BEFORE opening if we're about to enable
+    if (isMac && isEnabled) {
         // Only calculate position on FIRST open, then reuse it
         if (!savedPenPosition) {
             // Get the EXACT current position
@@ -291,8 +294,6 @@ function toggleDrawing() {
         toolbarContainer.style.bottom = 'auto';
         toolbarContainer.style.top = `${savedPenPosition.top}px`;
     }
-    
-    isEnabled = !isEnabled;
     
     if (!isEnabled) {
         closePen();
