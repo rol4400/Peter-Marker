@@ -34,13 +34,18 @@ function positionPenIcon() {
     if (isMac) {
         if (isEnabled && savedPenPosition) {
             // Keep the locked position (already adjusted for kiosk mode)
-            console.log('positionPenIcon during drawing - using saved top:', savedPenPosition.top, 'current window.innerHeight:', window.innerHeight);
             penIcon.style.bottom = 'auto';
             penIcon.style.top = `${savedPenPosition.top}px`;
             toolbarContainer.style.bottom = 'auto';
             toolbarContainer.style.top = `${savedPenPosition.top}px`;
+        } else if (!isEnabled && savedPenPosition) {
+            // Use saved original position after first open/close
+            penIcon.style.top = 'auto';
+            penIcon.style.bottom = `${savedPenPosition.originalBottom}px`;
+            toolbarContainer.style.top = 'auto';
+            toolbarContainer.style.bottom = `${savedPenPosition.originalBottom}px`;
         } else if (!isEnabled) {
-            // Normal positioning when not drawing (window includes menu bar offset)
+            // Initial positioning before first open
             penIcon.style.top = 'auto';
             penIcon.style.bottom = '60px';
             toolbarContainer.style.top = 'auto';
@@ -200,11 +205,12 @@ function closePen() {
     
     // On Mac, restore normal positioning after closing
     const isMac = navigator.platform.toLowerCase().includes('mac');
-    if (isMac) {
+    if (isMac && savedPenPosition) {
+        // Restore original bottom positioning
         penIcon.style.top = 'auto';
-        penIcon.style.bottom = '60px';
+        penIcon.style.bottom = `${savedPenPosition.originalBottom}px`;
         toolbarContainer.style.top = 'auto';
-        toolbarContainer.style.bottom = '60px';
+        toolbarContainer.style.bottom = `${savedPenPosition.originalBottom}px`;
     }
     
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -302,7 +308,7 @@ function toggleDrawing() {
     // Clear transition flag after window state change completes
     setTimeout(() => {
         isTransitioning = false;
-    }, 300);
+    }, 500);
 }
 
 // Event listeners for pen icon
