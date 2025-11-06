@@ -182,7 +182,6 @@ function closePen() {
     
     isErasing = false;
     document.getElementById('eraser').style.background = 'rgba(0, 0, 0, 0.5)';
-    document.getElementById('pen').style.background = 'rgba(0, 0, 0, 0.5)';
     
     closeColorPicker();
     colorPicker.style.pointerEvents = 'none';
@@ -250,13 +249,6 @@ penIcon.addEventListener('click', (e) => {
 });
 
 // Event listeners for toolbar buttons
-document.getElementById('pen').addEventListener('click', () => {
-    isEnabled = !isEnabled;
-    isErasing = false;
-    toggleToolbar();
-    document.getElementById('pen').style.background = isEnabled ? 'rgba(255, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.5)';
-});
-
 document.getElementById('eraser').addEventListener('click', () => {
     isErasing = !isErasing;
     document.getElementById('eraser').style.background = isErasing ? 'rgba(255, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.5)';
@@ -490,7 +482,6 @@ colorPicker.value = penColor;
 document.getElementById('color').style.background = penColor;
 penIcon.style.background = 'rgba(0, 0, 0, 0.5)';
 penIcon.style.display = 'none'; // Hidden initially - catch window handles opening
-document.getElementById('pen').style.background = 'rgba(0, 0, 0, 0.5)';
 updateColorPickerPosition();
 
 // Track mouse position globally to manage click-through for pen icon area
