@@ -212,6 +212,15 @@ function updateTrayMenu() {
         },
         { type: 'separator' },
         {
+            label: 'Open Debugger',
+            click: () => {
+                if (mainWindow) {
+                    mainWindow.webContents.openDevTools();
+                }
+            }
+        },
+        { type: 'separator' },
+        {
             label: 'Quit Peter Marker',
             click: () => {
                 app.isQuitting = true;
