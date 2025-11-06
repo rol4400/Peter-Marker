@@ -118,10 +118,13 @@ function createCatchWindow() {
     // Load a simple HTML that just calls toggleDrawing when clicked
     catchWindow.loadFile('catch-window.html');
     
-    // After content loads, send display bounds so it can position itself correctly
+    // After content loads, reposition to ensure accurate placement
     catchWindow.webContents.on('did-finish-load', () => {
         const cursorPoint = screen.getCursorScreenPoint();
         const currentDisplay = screen.getDisplayNearestPoint(cursorPoint);
+        const { x, y, width, height } = currentDisplay.bounds;
+        // Reposition after load to match the positioning logic used after open/close
+        catchWindow.setPosition(x + width - 100, y + height - 100);
         catchWindow.webContents.send('display-bounds', currentDisplay.bounds);
     });
     
