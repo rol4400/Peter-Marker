@@ -85,12 +85,11 @@ function createCatchWindow() {
     const { x: displayX, y: displayY, width: displayWidth, height: displayHeight } = currentDisplay.bounds;
     
     // Create a 100x100 window in bottom-right corner to catch clicks
-    // Position matches CSS: 20px from right, 20px from bottom
     catchWindow = new BrowserWindow({
         width: 100,
         height: 100,
-        x: displayX + displayWidth - 120,  // 100px width + 20px margin
-        y: displayY + displayHeight - 120, // 100px height + 20px margin
+        x: displayX + displayWidth - 100,
+        y: displayY + displayHeight - 100,
         transparent: true,
         frame: false,
         alwaysOnTop: true,
@@ -142,9 +141,9 @@ function updateWindowToDisplay(display) {
         const { x, y, width, height } = display.bounds;
         mainWindow.setBounds({ x, y, width, height });
         
-        // Also move catch window (with 20px margin)
+        // Also move catch window
         if (catchWindow && !isDrawingEnabled) {
-            catchWindow.setPosition(x + width - 120, y + height - 120);
+            catchWindow.setPosition(x + width - 100, y + height - 100);
         }
         
         // Notify renderer to reposition UI elements
