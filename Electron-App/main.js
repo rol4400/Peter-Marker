@@ -101,6 +101,7 @@ function createCatchWindow() {
         maximizable: false,
         fullscreenable: false,
         focusable: false,
+        acceptFirstMouse: true,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
@@ -113,6 +114,7 @@ function createCatchWindow() {
     
     if (process.platform === 'darwin') {
         catchWindow.setWindowButtonVisibility(false);
+        catchWindow.setBackgroundColor('#00000000'); // Ensure transparent background on macOS
     }
     
     // Load a simple HTML that just calls toggleDrawing when clicked
