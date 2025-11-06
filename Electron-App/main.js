@@ -121,8 +121,15 @@ function createPenIconWindow() {
     
     penIconWindow.loadFile('pen-icon.html');
     
-    // After content loads, set up mouse event handling for the pen icon
+    // After content loads, set up mouse event handling for the pen icon specifically
     penIconWindow.webContents.on('did-finish-load', () => {
+        // On macOS, use a circular window shape to avoid showing rectangle
+        if (process.platform === 'darwin') {
+            penIconWindow.setShape([
+                { x: 8, y: 8, width: 44, height: 44 }
+            ]);
+        }
+        
         // Inject script to handle mouse events on the pen icon specifically
         penIconWindow.webContents.executeJavaScript(`
             const penIcon = document.getElementById('penIcon');
