@@ -23,18 +23,25 @@ function resizeCanvas() {
 // Position pen icon and toolbar at actual bottom of viewport
 function positionPenIcon() {
     const viewportHeight = window.innerHeight;
-    // On macOS, add extra offset to account for dock area (even when hidden)
     const isMac = navigator.platform.toLowerCase().includes('mac');
     
-    // When in kiosk mode (drawing enabled), window is fullscreen so use smaller offset
-    // When not in kiosk, window includes dock area so use larger offset to compensate
-    const bottomOffset = isMac ? (isEnabled ? 20 : 40) : 20;
-    
-    // Position pen icon
-    penIcon.style.bottom = `${bottomOffset}px`;
-    
-    // Position toolbar (to the left of pen icon)
-    toolbarContainer.style.bottom = `${bottomOffset}px`;
+    if (isMac) {
+        // Calculate position from top instead to avoid dock area confusion
+        // Dock is ~80px, so position should be viewportHeight - 100 from top when not in kiosk
+        // In kiosk mode, viewportHeight is larger, so same calculation keeps same screen position
+        const targetFromTop = viewportHeight - 100;
+        
+        penIcon.style.bottom = 'auto';
+        penIcon.style.top = `${targetFromTop}px`;
+        toolbarContainer.style.bottom = 'auto';
+        toolbarContainer.style.top = `${targetFromTop}px`;
+    } else {
+        // Non-Mac: simple bottom positioning
+        penIcon.style.top = 'auto';
+        penIcon.style.bottom = '20px';
+        toolbarContainer.style.top = 'auto';
+        toolbarContainer.style.bottom = '20px';
+    }
     
     // Update color picker position if toolbar is visible
     updateColorPickerPosition();
@@ -172,19 +179,6 @@ function toggleToolbar() {
 }
 
 function closePen() {
-    // Disable transitions temporarily to prevent flickering
-    penIcon.style.transition = 'none';
-    toolbarContainer.style.transition = 'none';
-    
-    // Reposition FIRST for non-kiosk mode (will use larger offset on macOS)
-    positionPenIcon();
-    
-    // Re-enable transitions after a frame
-    requestAnimationFrame(() => {
-        penIcon.style.transition = '';
-        toolbarContainer.style.transition = '';
-    });
-    
     // Remove active class from canvas to make it click-through
     canvas.classList.remove('active');
     canvas.style.pointerEvents = 'none';
@@ -219,19 +213,6 @@ function closePen() {
 }
 
 function openPen() {
-    // Disable transitions temporarily to prevent flickering
-    penIcon.style.transition = 'none';
-    toolbarContainer.style.transition = 'none';
-    
-    // Reposition FIRST for kiosk mode (will use smaller offset on macOS)
-    positionPenIcon();
-    
-    // Re-enable transitions after a frame
-    requestAnimationFrame(() => {
-        penIcon.style.transition = '';
-        toolbarContainer.style.transition = '';
-    });
-    
     // Add active class to canvas to make it interactive
     canvas.classList.add('active');
     canvas.style.pointerEvents = 'auto';
@@ -269,6 +250,9 @@ function toggleDrawing() {
     }
     
     toggleToolbar();
+    
+    // Reposition after state change to adjust for window bounds change
+    setTimeout(() => positionPenIcon(), 100);
 }
 
 // Event listeners for pen icon
