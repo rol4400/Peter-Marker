@@ -22,18 +22,13 @@ function resizeCanvas() {
 
 // Position pen icon and toolbar at actual bottom of viewport
 function positionPenIcon() {
-    // Don't reposition while drawing is enabled (kiosk mode changes window bounds)
-    if (isEnabled) {
-        if (isEnabled) {
-            setTimeout(updateColorPickerPosition, 50);
-        }
-        return;
-    }
-    
     const viewportHeight = window.innerHeight;
     // On macOS, add extra offset to account for dock area (even when hidden)
     const isMac = navigator.platform.toLowerCase().includes('mac');
-    const bottomOffset = isMac ? 60 : 20; // 60px from bottom on Mac, 20px on other platforms
+    
+    // When in kiosk mode (drawing enabled), window is fullscreen so use smaller offset
+    // When not in kiosk, window includes dock area so use larger offset to compensate
+    const bottomOffset = isMac ? (isEnabled ? 20 : 60) : 20;
     
     // Position pen icon
     penIcon.style.bottom = `${bottomOffset}px`;
@@ -185,6 +180,9 @@ function closePen() {
     // Keep the pen icon area clickable by disabling click-through
     window.electronAPI.setIgnoreMouseEvents(false);
     
+    // Reposition for non-kiosk mode (will use larger offset on macOS)
+    positionPenIcon();
+    
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawingHistory = [];
     currentHistoryIndex = -1;
@@ -215,6 +213,9 @@ function openPen() {
     canvas.style.pointerEvents = 'auto';
     penIcon.style.background = 'rgba(255, 0, 0, 0.5)';
     penIcon.style.pointerEvents = 'auto'; // Ensure pen icon is always clickable
+    
+    // Reposition for kiosk mode (will use smaller offset on macOS)
+    positionPenIcon();
     
     const buttons = toolbarContainer.children;
     for (let i = 0; i < buttons.length - 1; i++) {
