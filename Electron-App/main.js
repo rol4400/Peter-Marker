@@ -85,7 +85,7 @@ function createCatchWindow() {
     const { x: displayX, y: displayY, width: displayWidth, height: displayHeight } = currentDisplay.bounds;
     
     // Create a 100x100 window in bottom-right corner to catch clicks
-    catchWindow = new BrowserWindow({
+    const windowOptions = {
         width: 100,
         height: 100,
         x: displayX + displayWidth - 100,
@@ -110,7 +110,14 @@ function createCatchWindow() {
             preload: path.join(__dirname, 'preload.js'),
             offscreen: false
         }
-    });
+    };
+    
+    // On macOS, use 'panel' type which has better transparency on external monitors
+    if (process.platform === 'darwin') {
+        windowOptions.type = 'panel';
+    }
+    
+    catchWindow = new BrowserWindow(windowOptions);
     
     catchWindow.setAlwaysOnTop(true, 'screen-saver', 1); // One level below main window
     catchWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
