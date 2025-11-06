@@ -27,10 +27,18 @@ function positionPenIcon() {
     const isMac = navigator.platform.toLowerCase().includes('mac');
     
     if (isMac) {
+        // Don't reposition while drawing - it causes flicker when entering kiosk mode
+        if (isEnabled) {
+            if (isEnabled) {
+                setTimeout(updateColorPickerPosition, 50);
+            }
+            return;
+        }
+        
         // On first call when not in kiosk mode, calculate and store the fixed position
-        if (fixedBottomPosition === null && !isEnabled) {
-            // Set initial position: 60px from bottom in non-kiosk mode
-            fixedBottomPosition = 100;
+        if (fixedBottomPosition === null) {
+            // Set initial position: 30px from bottom in non-kiosk mode
+            fixedBottomPosition = 30;
         }
         
         // Always use the same bottom offset regardless of viewport height changes
