@@ -101,6 +101,7 @@ function createPenIconWindow() {
         maximizable: false,
         fullscreenable: false,
         focusable: false,
+        backgroundColor: '#00000000',
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
