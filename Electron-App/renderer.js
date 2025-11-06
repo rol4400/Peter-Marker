@@ -28,7 +28,7 @@ function positionPenIcon() {
     
     // When in kiosk mode (drawing enabled), window is fullscreen so use smaller offset
     // When not in kiosk, window includes dock area so use larger offset to compensate
-    const bottomOffset = isMac ? (isEnabled ? 20 : 60) : 20;
+    const bottomOffset = isMac ? (isEnabled ? 20 : 40) : 20;
     
     // Position pen icon
     penIcon.style.bottom = `${bottomOffset}px`;
