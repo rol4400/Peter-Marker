@@ -556,3 +556,33 @@ document.getElementById('color').style.background = penColor;
 penIcon.style.background = 'rgba(0, 0, 0, 0.5)';
 document.getElementById('pen').style.background = 'rgba(0, 0, 0, 0.5)';
 updateColorPickerPosition();
+
+// Track mouse position globally to manage click-through for pen icon area
+let lastMouseX = 0;
+let lastMouseY = 0;
+
+document.addEventListener('mousemove', (e) => {
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+    
+    // Check if mouse is over pen icon or toolbar area (bottom-right corner)
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    const penIconRegion = {
+        left: windowWidth - 100,
+        right: windowWidth,
+        top: windowHeight - 100,
+        bottom: windowHeight
+    };
+    
+    const isOverPenArea = lastMouseX >= penIconRegion.left && 
+                          lastMouseX <= penIconRegion.right && 
+                          lastMouseY >= penIconRegion.top && 
+                          lastMouseY <= penIconRegion.bottom;
+    
+    if (isOverPenArea && !isEnabled) {
+        window.electronAPI.setIgnoreMouseEvents(false);
+    } else if (!isEnabled) {
+        window.electronAPI.setIgnoreMouseEvents(true);
+    }
+}, { passive: true });
