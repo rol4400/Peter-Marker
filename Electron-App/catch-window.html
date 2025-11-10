@@ -27,8 +27,12 @@
             align-items: flex-end;
             justify-content: flex-end;
             padding: 18px;
-            /* Force transparent background at CSS level */
-            background: rgba(0, 0, 0, 0) !important;
+            /* Force transparent background at CSS level - critical for macOS Sequoia */
+            background: transparent !important;
+            background-color: transparent !important;
+            /* Disable any compositor effects that might add white backgrounds */
+            -webkit-backdrop-filter: none;
+            backdrop-filter: none;
         }
 
         #penIcon {
@@ -46,6 +50,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            /* Ensure icon has proper stacking and isolation */
+            isolation: isolate;
         }
 
         #penIcon:hover {

@@ -110,8 +110,11 @@ function createCatchWindow() {
         }
     };
     
-    // On macOS, don't use vibrancy as it can cause white backgrounds
-    // Keep backgroundColor: '#00000000' for transparency
+    // On macOS Sequoia, add vibrancy to fix transparency issues on external monitors
+    if (process.platform === 'darwin') {
+        windowOptions.vibrancy = 'ultra-dark';
+        windowOptions.visualEffectState = 'active';
+    }
     
     catchWindow = new BrowserWindow(windowOptions);
     
@@ -120,8 +123,14 @@ function createCatchWindow() {
     
     if (process.platform === 'darwin') {
         catchWindow.setWindowButtonVisibility(false);
-        // Ensure transparency is applied
+        // Ensure transparency is applied and force a repaint
         catchWindow.setBackgroundColor('#00000000');
+        // Force window invalidation to ensure transparency is applied properly on Sequoia
+        setTimeout(() => {
+            const bounds = catchWindow.getBounds();
+            catchWindow.setBounds({ ...bounds, width: bounds.width + 1 });
+            catchWindow.setBounds(bounds);
+        }, 100);
     }
     
     // Load a simple HTML that just calls toggleDrawing when clicked
@@ -135,7 +144,15 @@ function createCatchWindow() {
         // Reposition after load to match the positioning logic used after open/close
         catchWindow.setPosition(x + width - 100, y + height - 100);
         
-
+        // On macOS Sequoia, force another transparency refresh after content loads
+        if (process.platform === 'darwin') {
+            setTimeout(() => {
+                catchWindow.setBackgroundColor('#00000000');
+                const bounds = catchWindow.getBounds();
+                catchWindow.setBounds({ ...bounds, width: bounds.width + 1 });
+                catchWindow.setBounds(bounds);
+            }, 50);
+        }
         
         catchWindow.webContents.send('display-bounds', currentDisplay.bounds);
     });
@@ -170,6 +187,12 @@ function updateWindowToDisplay(display) {
             // Refresh transparency on macOS when moving between displays
             if (process.platform === 'darwin') {
                 catchWindow.setBackgroundColor('#00000000');
+                // Force a repaint to ensure transparency applies on Sequoia
+                setTimeout(() => {
+                    const bounds = catchWindow.getBounds();
+                    catchWindow.setBounds({ ...bounds, width: bounds.width + 1 });
+                    catchWindow.setBounds(bounds);
+                }, 50);
             }
         }
         
