@@ -103,18 +103,18 @@ function createCatchWindow() {
         focusable: false,
         acceptFirstMouse: true,
         backgroundColor: '#00000000',
+        opacity: 0.99,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
-            preload: path.join(__dirname, 'preload.js')
+            preload: path.join(__dirname, 'preload.js'),
+            offscreen: false,
+            backgroundThrottling: false
         }
     };
     
-    // On macOS Sequoia, add vibrancy to fix transparency issues on external monitors
-    if (process.platform === 'darwin') {
-        windowOptions.vibrancy = 'ultra-dark';
-        windowOptions.visualEffectState = 'active';
-    }
+    // On macOS Sequoia, avoid vibrancy (causes white background)
+    // Instead rely on pure transparency with opacity trick
     
     catchWindow = new BrowserWindow(windowOptions);
     
@@ -123,14 +123,20 @@ function createCatchWindow() {
     
     if (process.platform === 'darwin') {
         catchWindow.setWindowButtonVisibility(false);
-        // Ensure transparency is applied and force a repaint
+        // Force transparency at multiple points - Sequoia needs repeated assertions
         catchWindow.setBackgroundColor('#00000000');
-        // Force window invalidation to ensure transparency is applied properly on Sequoia
-        setTimeout(() => {
-            const bounds = catchWindow.getBounds();
-            catchWindow.setBounds({ ...bounds, width: bounds.width + 1 });
-            catchWindow.setBounds(bounds);
-        }, 100);
+        catchWindow.setOpacity(0.99); // Just under 1.0 forces transparency path
+        
+        // Multiple repaint cycles to force compositor update on external monitors
+        for (let i = 0; i < 3; i++) {
+            setTimeout(() => {
+                catchWindow.setBackgroundColor('#00000000');
+                catchWindow.setOpacity(0.99);
+                const bounds = catchWindow.getBounds();
+                catchWindow.setBounds({ ...bounds, height: bounds.height + 1 });
+                catchWindow.setBounds(bounds);
+            }, 50 * (i + 1));
+        }
     }
     
     // Load a simple HTML that just calls toggleDrawing when clicked
@@ -144,14 +150,20 @@ function createCatchWindow() {
         // Reposition after load to match the positioning logic used after open/close
         catchWindow.setPosition(x + width - 100, y + height - 100);
         
-        // On macOS Sequoia, force another transparency refresh after content loads
+        // On macOS Sequoia, aggressively force transparency after content loads
         if (process.platform === 'darwin') {
-            setTimeout(() => {
-                catchWindow.setBackgroundColor('#00000000');
-                const bounds = catchWindow.getBounds();
-                catchWindow.setBounds({ ...bounds, width: bounds.width + 1 });
-                catchWindow.setBounds(bounds);
-            }, 50);
+            // Multiple cycles to combat Sequoia's compositor behavior
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    catchWindow.setBackgroundColor('#00000000');
+                    catchWindow.setOpacity(0.99);
+                    if (i % 2 === 0) {
+                        const bounds = catchWindow.getBounds();
+                        catchWindow.setBounds({ ...bounds, width: bounds.width + (i % 2 ? 1 : -1) });
+                        setTimeout(() => catchWindow.setBounds(bounds), 10);
+                    }
+                }, 30 * (i + 1));
+            }
         }
         
         catchWindow.webContents.send('display-bounds', currentDisplay.bounds);
@@ -182,17 +194,16 @@ function updateWindowToDisplay(display) {
         
         // Also move catch window
         if (catchWindow && !isDrawingEnabled) {
-            catchWindow.setPosition(x + width - 100, y + height - 100);
-            
-            // Refresh transparency on macOS when moving between displays
+            // On macOS Sequoia with external monitors, recreate window for clean transparency
             if (process.platform === 'darwin') {
-                catchWindow.setBackgroundColor('#00000000');
-                // Force a repaint to ensure transparency applies on Sequoia
-                setTimeout(() => {
-                    const bounds = catchWindow.getBounds();
-                    catchWindow.setBounds({ ...bounds, width: bounds.width + 1 });
-                    catchWindow.setBounds(bounds);
-                }, 50);
+                const wasVisible = catchWindow.isVisible();
+                catchWindow.destroy();
+                createCatchWindow();
+                if (wasVisible) {
+                    catchWindow.show();
+                }
+            } else {
+                catchWindow.setPosition(x + width - 100, y + height - 100);
             }
         }
         
