@@ -204,8 +204,7 @@ function createCatchWindow() {
     
     // After content loads, reposition and force transparency refresh
     catchWindow.webContents.on('did-finish-load', () => {
-        const cursorPoint = screen.getCursorScreenPoint();
-        const currentDisplay = screen.getDisplayNearestPoint(cursorPoint);
+        const currentDisplay = getTargetDisplay();
         const { x, y, width, height } = currentDisplay.bounds;
         // Reposition after load to match the positioning logic used after open/close
         catchWindow.setPosition(x + width - 100, y + height - 100);
@@ -477,6 +476,10 @@ function toggleDrawing() {
         } else {
             // Show catch window when not drawing
             if (catchWindow) {
+                // Ensure catch window is on the correct display before showing
+                const targetDisplay = getTargetDisplay();
+                const { x, y, width, height } = targetDisplay.bounds;
+                catchWindow.setPosition(x + width - 100, y + height - 100);
                 catchWindow.show();
             }
             
@@ -528,6 +531,10 @@ ipcMain.on('close-drawing', () => {
         
         // Show catch window when closing
         if (catchWindow) {
+            // Ensure catch window is on the correct display before showing
+            const targetDisplay = getTargetDisplay();
+            const { x, y, width, height } = targetDisplay.bounds;
+            catchWindow.setPosition(x + width - 100, y + height - 100);
             catchWindow.show();
         }
         
