@@ -3,88 +3,10 @@ const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
 
-// Settings file path
-const settingsPath = path.join(app.getPath('userData'), 'display-settings.json');
-
-// Load settings from disk
-function loadSettings() {
-    try {
-        if (fs.existsSync(settingsPath)) {
-            const data = fs.readFileSync(settingsPath, 'utf8');
-            const settings = JSON.parse(data);
-            displayConfigurations = settings.displayConfigurations || {};
-            
-            // Try to restore locked display for current configuration
-            const currentConfig = getCurrentDisplayConfiguration();
-            if (displayConfigurations[currentConfig]) {
-                const savedDisplayId = displayConfigurations[currentConfig];
-                // Check if the display still exists
-                const displays = screen.getAllDisplays();
-                if (displays.find(d => d.id === savedDisplayId)) {
-                    lockedDisplayId = savedDisplayId;
-                    console.log(`Restored locked display: ${savedDisplayId}`);
-                }
-            }
-        }
-    } catch (err) {
-        console.error('Failed to load settings:', err);
-    }
-}
-
-// Save settings to disk
-function saveSettings() {
-    try {
-        const currentConfig = getCurrentDisplayConfiguration();
-        if (lockedDisplayId !== null) {
-            displayConfigurations[currentConfig] = lockedDisplayId;
-        } else {
-            delete displayConfigurations[currentConfig];
-        }
-        
-        const settings = {
-            lockedDisplayId,
-            displayConfigurations
-        };
-        fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
-    } catch (err) {
-        console.error('Failed to save settings:', err);
-    }
-}
-
-// Get a unique identifier for current display configuration
-function getCurrentDisplayConfiguration() {
-    const displays = screen.getAllDisplays();
-    // Sort by ID to ensure consistent ordering
-    const sortedDisplays = displays.sort((a, b) => a.id - b.id);
-    // Create a signature based on display count and IDs
-    return sortedDisplays.map(d => d.id).join('-');
-}
-
-// Get the target display based on lock state
-function getTargetDisplay() {
-    if (lockedDisplayId !== null) {
-        // Try to find the locked display
-        const displays = screen.getAllDisplays();
-        const lockedDisplay = displays.find(d => d.id === lockedDisplayId);
-        if (lockedDisplay) {
-            return lockedDisplay;
-        }
-        // If locked display not found, fall back to cursor position
-        console.log('Locked display not found, falling back to cursor position');
-    }
-    // Auto mode: follow cursor
-    const cursorPoint = screen.getCursorScreenPoint();
-    return screen.getDisplayNearestPoint(cursorPoint);
-}
-
 let mainWindow;
 let catchWindow; // Invisible window to catch clicks on pen icon area
 let tray;
 let isDrawingEnabled = false;
-
-// Display locking state
-let lockedDisplayId = null; // null = auto mode (follow cursor)
-let displayConfigurations = {}; // Store display configs by unique identifier
 
 // Configure auto-updater
 autoUpdater.logger = require('electron-log');
@@ -146,25 +68,21 @@ function createWindow() {
             mainWindow.hide();
         }
     });
+
+    // Handle display changes (monitor resolution, fullscreen, taskbar changes, etc.)
+    screen.on('display-metrics-changed', () => {
+        updateWindowBounds();
+    });
+    
+    // Also update when display is added/removed
+    screen.on('display-added', updateWindowBounds);
+    screen.on('display-removed', updateWindowBounds);
 }
 
 function createCatchWindow() {
-    // Use locked display if set, otherwise follow cursor
-    let targetDisplay;
-    if (lockedDisplayId !== null) {
-        const displays = screen.getAllDisplays();
-        targetDisplay = displays.find(d => d.id === lockedDisplayId);
-        if (!targetDisplay) {
-            // Locked display not found, fall back to cursor
-            const cursorPoint = screen.getCursorScreenPoint();
-            targetDisplay = screen.getDisplayNearestPoint(cursorPoint);
-        }
-    } else {
-        // Auto mode: follow cursor
-        const cursorPoint = screen.getCursorScreenPoint();
-        targetDisplay = screen.getDisplayNearestPoint(cursorPoint);
-    }
-    const { x: displayX, y: displayY, width: displayWidth, height: displayHeight } = targetDisplay.bounds;
+    const cursorPoint = screen.getCursorScreenPoint();
+    const currentDisplay = screen.getDisplayNearestPoint(cursorPoint);
+    const { x: displayX, y: displayY, width: displayWidth, height: displayHeight } = currentDisplay.bounds;
     
     // Create a 100x100 window in bottom-right corner to catch clicks
     const windowOptions = {
@@ -226,20 +144,9 @@ function createCatchWindow() {
     
     // After content loads, reposition and force transparency refresh
     catchWindow.webContents.on('did-finish-load', () => {
-        // Use the same display logic as createCatchWindow
-        let targetDisplay;
-        if (lockedDisplayId !== null) {
-            const displays = screen.getAllDisplays();
-            targetDisplay = displays.find(d => d.id === lockedDisplayId);
-            if (!targetDisplay) {
-                const cursorPoint = screen.getCursorScreenPoint();
-                targetDisplay = screen.getDisplayNearestPoint(cursorPoint);
-            }
-        } else {
-            const cursorPoint = screen.getCursorScreenPoint();
-            targetDisplay = screen.getDisplayNearestPoint(cursorPoint);
-        }
-        const { x, y, width, height } = targetDisplay.bounds;
+        const cursorPoint = screen.getCursorScreenPoint();
+        const currentDisplay = screen.getDisplayNearestPoint(cursorPoint);
+        const { x, y, width, height } = currentDisplay.bounds;
         // Reposition after load to match the positioning logic used after open/close
         catchWindow.setPosition(x + width - 100, y + height - 100);
         
@@ -259,7 +166,7 @@ function createCatchWindow() {
             }
         }
         
-        catchWindow.webContents.send('display-bounds', targetDisplay.bounds);
+        catchWindow.webContents.send('display-bounds', currentDisplay.bounds);
     });
     
     catchWindow.on('close', (event) => {
@@ -272,20 +179,11 @@ function createCatchWindow() {
 
 function updateWindowBounds() {
     if (mainWindow) {
-        // Only update if we're locked to a display
-        // In auto mode, let the mouse tracking handle it
-        if (lockedDisplayId !== null) {
-            const displays = screen.getAllDisplays();
-            const targetDisplay = displays.find(d => d.id === lockedDisplayId);
-            if (targetDisplay) {
-                updateWindowToDisplay(targetDisplay);
-            }
-        } else {
-            // Auto mode: get display at cursor position
-            const cursorPoint = screen.getCursorScreenPoint();
-            const currentDisplay = screen.getDisplayNearestPoint(cursorPoint);
-            updateWindowToDisplay(currentDisplay);
-        }
+        // Get the display where the cursor currently is
+        const cursorPoint = screen.getCursorScreenPoint();
+        const currentDisplay = screen.getDisplayNearestPoint(cursorPoint);
+        
+        updateWindowToDisplay(currentDisplay);
     }
 }
 
@@ -301,8 +199,6 @@ function updateWindowToDisplay(display) {
                 const wasVisible = catchWindow.isVisible();
                 catchWindow.destroy();
                 createCatchWindow();
-                // Ensure catch window is on the same display as main window
-                catchWindow.setPosition(x + width - 100, y + height - 100);
                 if (wasVisible) {
                     catchWindow.show();
                 }
@@ -324,23 +220,6 @@ function startMouseTracking() {
     mouseTrackingInterval = setInterval(() => {
         if (!mainWindow) return;
         
-        // If locked to a display, don't follow cursor
-        if (lockedDisplayId !== null) {
-            // But check if the locked display still exists
-            const displays = screen.getAllDisplays();
-            const lockedDisplay = displays.find(d => d.id === lockedDisplayId);
-            if (!lockedDisplay) {
-                // Locked display disconnected, switch to auto mode
-                console.log('Locked display disconnected, switching to auto mode');
-                lockedDisplayId = null;
-                saveSettings();
-                updateTrayMenu();
-                updateWindowBounds();
-            }
-            return;
-        }
-        
-        // Auto mode: follow cursor
         const cursorPoint = screen.getCursorScreenPoint();
         const currentDisplay = screen.getDisplayNearestPoint(cursorPoint);
         const windowBounds = mainWindow.getBounds();
@@ -417,44 +296,6 @@ function updateTrayMenu() {
     const autoStartEnabled = getAutoStartEnabled();
     const version = app.getVersion();
     
-    // Build display submenu
-    const displays = screen.getAllDisplays();
-    const displayMenuItems = [
-        {
-            label: lockedDisplayId === null ? '● Auto (Follow Cursor)' : '○ Auto (Follow Cursor)',
-            click: () => {
-                lockedDisplayId = null;
-                saveSettings();
-                updateTrayMenu();
-                // Update window position immediately
-                updateWindowBounds();
-            }
-        },
-        { type: 'separator' }
-    ];
-    
-    // Add each display
-    displays.forEach((display, index) => {
-        const isLocked = lockedDisplayId === display.id;
-        const isPrimary = display.bounds.x === 0 && display.bounds.y === 0;
-        let label = `${isLocked ? '● ' : '○ '}Display ${index + 1}`;
-        if (isPrimary) {
-            label += ' (Primary)';
-        }
-        label += ` - ${display.bounds.width}x${display.bounds.height}`;
-        
-        displayMenuItems.push({
-            label,
-            click: () => {
-                lockedDisplayId = display.id;
-                saveSettings();
-                updateTrayMenu();
-                // Move to locked display immediately
-                updateWindowToDisplay(display);
-            }
-        });
-    });
-    
     const contextMenu = Menu.buildFromTemplate([
         {
             label: `Peter Marker v${version}`,
@@ -472,11 +313,6 @@ function updateTrayMenu() {
                     mainWindow.webContents.send('clear-canvas');
                 }
             }
-        },
-        { type: 'separator' },
-        {
-            label: 'Lock to Display',
-            submenu: displayMenuItems
         },
         { type: 'separator' },
         {
@@ -518,20 +354,6 @@ function toggleDrawing() {
     
     if (mainWindow) {
         if (isDrawingEnabled) {
-            // Ensure main window is on the same display as catch window
-            if (catchWindow) {
-                const catchBounds = catchWindow.getBounds();
-                const catchDisplay = screen.getDisplayMatching(catchBounds);
-                const mainBounds = mainWindow.getBounds();
-                const mainDisplay = screen.getDisplayMatching(mainBounds);
-                
-                // If they're on different displays, move main window to catch window's display
-                if (catchDisplay.id !== mainDisplay.id) {
-                    const { x, y, width, height } = catchDisplay.bounds;
-                    mainWindow.setBounds({ x, y, width, height });
-                }
-            }
-            
             // Hide catch window when drawing
             if (catchWindow) {
                 catchWindow.hide();
@@ -901,9 +723,6 @@ function checkForUpdates() {
 }
 
 app.whenReady().then(() => {
-    // Load saved settings first
-    loadSettings();
-    
     // Enable auto-start by default on first launch
     const loginSettings = app.getLoginItemSettings();
     if (!loginSettings.wasOpenedAtLogin && !loginSettings.wasOpenedAsHidden) {
@@ -917,54 +736,6 @@ app.whenReady().then(() => {
     
     // Start tracking mouse to follow active display
     startMouseTracking();
-    
-    // Listen for display configuration changes
-    screen.on('display-added', (newDisplay) => {
-        console.log('Display added:', newDisplay.id);
-        updateTrayMenu(); // Refresh menu to show new display
-        
-        // Check if this is our previously locked display returning
-        const currentConfig = getCurrentDisplayConfiguration();
-        if (displayConfigurations[currentConfig]) {
-            const savedDisplayId = displayConfigurations[currentConfig];
-            if (savedDisplayId === newDisplay.id) {
-                lockedDisplayId = savedDisplayId;
-                updateWindowToDisplay(newDisplay);
-                updateTrayMenu();
-            }
-        }
-    });
-    
-    screen.on('display-removed', (oldDisplay) => {
-        console.log('Display removed:', oldDisplay.id);
-        updateTrayMenu(); // Refresh menu to remove display
-        
-        // If the removed display was locked, switch to auto mode
-        if (lockedDisplayId === oldDisplay.id) {
-            console.log('Locked display removed, switching to auto mode');
-            lockedDisplayId = null;
-            saveSettings();
-            updateTrayMenu();
-            updateWindowBounds();
-        }
-    });
-    
-    screen.on('display-metrics-changed', (display, changedMetrics) => {
-        console.log('Display metrics changed:', display.id, changedMetrics);
-        updateTrayMenu(); // Refresh menu with updated resolution
-        
-        // If locked to this display, update window bounds
-        if (lockedDisplayId === display.id) {
-            updateWindowToDisplay(display);
-        } else if (lockedDisplayId === null) {
-            // In auto mode, update if this is the current display
-            const windowBounds = mainWindow.getBounds();
-            const windowDisplay = screen.getDisplayMatching(windowBounds);
-            if (windowDisplay.id === display.id) {
-                updateWindowToDisplay(display);
-            }
-        }
-    });
     
     // Check for updates on startup after a short delay
     setTimeout(() => {
