@@ -14,14 +14,15 @@ function loadSettings() {
             const settings = JSON.parse(data);
             displayConfigurations = settings.displayConfigurations || {};
             
-            // Try to restore locked display if it exists
+            // Try to restore locked display for current configuration
             const currentConfig = getCurrentDisplayConfiguration();
-            if (settings.lockedDisplayId && displayConfigurations[currentConfig]) {
+            if (displayConfigurations[currentConfig]) {
                 const savedDisplayId = displayConfigurations[currentConfig];
                 // Check if the display still exists
                 const displays = screen.getAllDisplays();
                 if (displays.find(d => d.id === savedDisplayId)) {
                     lockedDisplayId = savedDisplayId;
+                    console.log(`Restored locked display: ${savedDisplayId}`);
                 }
             }
         }
@@ -899,8 +900,9 @@ app.whenReady().then(() => {
         console.log('Display metrics changed:', display.id, changedMetrics);
         updateTrayMenu(); // Refresh menu with updated resolution
         
-        // If this is the locked display, update window bounds
-        if (lockedDisplayId === display.id) {
+        // Update window bounds if this affects the target display
+        const targetDisplay = getTargetDisplay();
+        if (targetDisplay.id === display.id) {
             updateWindowToDisplay(display);
         }
     });
