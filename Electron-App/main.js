@@ -8,6 +8,67 @@ let catchWindow; // Invisible window to catch clicks on pen icon area
 let tray;
 let isDrawingEnabled = false;
 
+// Display locking
+let lockedDisplayId = null; // null means auto-follow cursor
+const SETTINGS_FILE = path.join(app.getPath('userData'), 'display-settings.json');
+
+// Load display settings
+function loadDisplaySettings() {
+    try {
+        if (fs.existsSync(SETTINGS_FILE)) {
+            const data = fs.readFileSync(SETTINGS_FILE, 'utf8');
+            const settings = JSON.parse(data);
+            lockedDisplayId = settings.lockedDisplayId || null;
+            console.log('Loaded display settings:', settings);
+        }
+    } catch (err) {
+        console.error('Failed to load display settings:', err);
+    }
+}
+
+// Save display settings
+function saveDisplaySettings() {
+    try {
+        const settings = { lockedDisplayId };
+        fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+        console.log('Saved display settings:', settings);
+    } catch (err) {
+        console.error('Failed to save display settings:', err);
+    }
+}
+
+// Get the target display based on lock settings
+function getTargetDisplay() {
+    if (lockedDisplayId !== null) {
+        // Try to find the locked display
+        const displays = screen.getAllDisplays();
+        const lockedDisplay = displays.find(d => d.id === lockedDisplayId);
+        if (lockedDisplay) {
+            return lockedDisplay;
+        }
+        // If locked display not found, fall back to cursor position
+        console.log(`Locked display ${lockedDisplayId} not found, falling back to cursor`);
+    }
+    // Auto mode: follow cursor
+    const cursorPoint = screen.getCursorScreenPoint();
+    return screen.getDisplayNearestPoint(cursorPoint);
+}
+
+// Set display lock
+function setDisplayLock(displayId) {
+    lockedDisplayId = displayId;
+    saveDisplaySettings();
+    updateTrayMenu();
+    // Immediately update window position to locked display
+    if (displayId !== null) {
+        const displays = screen.getAllDisplays();
+        const targetDisplay = displays.find(d => d.id === displayId);
+        if (targetDisplay) {
+            updateWindowToDisplay(targetDisplay);
+        }
+    }
+}
+
 // Configure auto-updater
 autoUpdater.logger = require('electron-log');
 autoUpdater.logger.transports.file.level = 'info';
@@ -80,8 +141,7 @@ function createWindow() {
 }
 
 function createCatchWindow() {
-    const cursorPoint = screen.getCursorScreenPoint();
-    const currentDisplay = screen.getDisplayNearestPoint(cursorPoint);
+    const currentDisplay = getTargetDisplay();
     const { x: displayX, y: displayY, width: displayWidth, height: displayHeight } = currentDisplay.bounds;
     
     // Create a 100x100 window in bottom-right corner to catch clicks
@@ -179,9 +239,8 @@ function createCatchWindow() {
 
 function updateWindowBounds() {
     if (mainWindow) {
-        // Get the display where the cursor currently is
-        const cursorPoint = screen.getCursorScreenPoint();
-        const currentDisplay = screen.getDisplayNearestPoint(cursorPoint);
+        // Get the target display (locked or auto-follow cursor)
+        const currentDisplay = getTargetDisplay();
         
         updateWindowToDisplay(currentDisplay);
     }
@@ -219,6 +278,11 @@ function startMouseTracking() {
     // Check cursor position every 1 second to see if it moved to a different display
     mouseTrackingInterval = setInterval(() => {
         if (!mainWindow) return;
+        
+        // Skip if display is locked
+        if (lockedDisplayId !== null) {
+            return;
+        }
         
         const cursorPoint = screen.getCursorScreenPoint();
         const currentDisplay = screen.getDisplayNearestPoint(cursorPoint);
@@ -296,6 +360,28 @@ function updateTrayMenu() {
     const autoStartEnabled = getAutoStartEnabled();
     const version = app.getVersion();
     
+    // Build display lock submenu
+    const displays = screen.getAllDisplays();
+    const displayMenuItems = [
+        {
+            label: lockedDisplayId === null ? '● Auto (Follow Cursor)' : '○ Auto (Follow Cursor)',
+            click: () => setDisplayLock(null)
+        },
+        { type: 'separator' }
+    ];
+    
+    // Add menu item for each display
+    displays.forEach((display, index) => {
+        const isPrimary = display.id === screen.getPrimaryDisplay().id;
+        const isLocked = display.id === lockedDisplayId;
+        const label = `${isLocked ? '●' : '○'} Display ${index + 1}${isPrimary ? ' (Primary)' : ''} - ${display.bounds.width}x${display.bounds.height}`;
+        
+        displayMenuItems.push({
+            label: label,
+            click: () => setDisplayLock(display.id)
+        });
+    });
+    
     const contextMenu = Menu.buildFromTemplate([
         {
             label: `Peter Marker v${version}`,
@@ -313,6 +399,11 @@ function updateTrayMenu() {
                     mainWindow.webContents.send('clear-canvas');
                 }
             }
+        },
+        { type: 'separator' },
+        {
+            label: 'Lock to Display',
+            submenu: displayMenuItems
         },
         { type: 'separator' },
         {
@@ -723,6 +814,9 @@ function checkForUpdates() {
 }
 
 app.whenReady().then(() => {
+    // Load display settings from disk
+    loadDisplaySettings();
+    
     // Enable auto-start by default on first launch
     const loginSettings = app.getLoginItemSettings();
     if (!loginSettings.wasOpenedAtLogin && !loginSettings.wasOpenedAsHidden) {
