@@ -249,19 +249,29 @@ function updateWindowBounds() {
 function updateWindowToDisplay(display) {
     if (mainWindow) {
         const { x, y, width, height } = display.bounds;
+        const currentBounds = mainWindow.getBounds();
+        
+        // Check if we're actually moving to a different display
+        const isMovingDisplay = (currentBounds.x !== x || currentBounds.y !== y || 
+                                 currentBounds.width !== width || currentBounds.height !== height);
+        
         mainWindow.setBounds({ x, y, width, height });
         
         // Also move catch window
         if (catchWindow && !isDrawingEnabled) {
-            // On macOS Sequoia with external monitors, recreate window for clean transparency
-            if (process.platform === 'darwin') {
+            // On macOS Sequoia with external monitors, only recreate window when actually moving displays
+            if (process.platform === 'darwin' && isMovingDisplay) {
                 const wasVisible = catchWindow.isVisible();
                 catchWindow.destroy();
                 createCatchWindow();
                 if (wasVisible) {
                     catchWindow.show();
                 }
+            } else if (!isMovingDisplay) {
+                // Just ensure it's positioned correctly on the same display
+                catchWindow.setPosition(x + width - 100, y + height - 100);
             } else {
+                // Windows: just reposition
                 catchWindow.setPosition(x + width - 100, y + height - 100);
             }
         }
