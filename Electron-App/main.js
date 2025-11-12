@@ -634,23 +634,42 @@ autoUpdater.on('checking-for-update', () => {
 autoUpdater.on('update-available', (info) => {
     console.log('Update available:', info.version);
     
-    // Always prompt user when update is available (startup or manual)
     if (mainWindow) {
         const { dialog } = require('electron');
-        const response = dialog.showMessageBoxSync(mainWindow, {
-            type: 'info',
-            title: 'Update Available',
-            message: `An update to Peter Marker is available (v${info.version}). Would you like to install it now?`,
-            detail: 'The marker program will restart after the update is installed.',
-            buttons: ['Yes', 'No'],
-            defaultId: 0,
-            cancelId: 1
-        });
         
-        if (response === 0) {
-            // User clicked Yes - start download and show progress
-            createProgressWindow();
-            autoUpdater.downloadUpdate();
+        if (process.platform === 'darwin') {
+            // macOS: Direct user to GitHub releases for manual download (unsigned app)
+            const response = dialog.showMessageBoxSync(mainWindow, {
+                type: 'info',
+                title: 'Update Available',
+                message: `Peter Marker v${info.version} is available!`,
+                detail: 'Click "Download Update" to visit the releases page and download the latest version manually.',
+                buttons: ['Download Update', 'Later'],
+                defaultId: 0,
+                cancelId: 1
+            });
+            
+            if (response === 0) {
+                // Open GitHub releases page
+                shell.openExternal('https://github.com/rol4400/Peter-Marker/releases/latest');
+            }
+        } else {
+            // Windows: Automatic update with download
+            const response = dialog.showMessageBoxSync(mainWindow, {
+                type: 'info',
+                title: 'Update Available',
+                message: `An update to Peter Marker is available (v${info.version}). Would you like to install it now?`,
+                detail: 'The marker program will restart after the update is installed.',
+                buttons: ['Yes', 'No'],
+                defaultId: 0,
+                cancelId: 1
+            });
+            
+            if (response === 0) {
+                // User clicked Yes - start download and show progress
+                createProgressWindow();
+                autoUpdater.downloadUpdate();
+            }
         }
     }
     isManualUpdateCheck = false;
@@ -724,73 +743,23 @@ autoUpdater.on('update-downloaded', (info) => {
     
     const { dialog } = require('electron');
     
-    if (process.platform === 'darwin') {
-        // macOS: For unsigned apps, open the DMG manually so user can install
-        const updatePath = path.join(app.getPath('userData'), 'pending-update');
-        
-        // Try to find the downloaded DMG
-        if (fs.existsSync(updatePath)) {
-            const files = fs.readdirSync(updatePath);
-            const dmgFile = files.find(f => f.endsWith('.dmg'));
-            
-            if (dmgFile) {
-                const dmgPath = path.join(updatePath, dmgFile);
-                
-                const result = dialog.showMessageBoxSync({
-                    type: 'info',
-                    title: 'Update Downloaded',
-                    message: `Peter Marker v${info.version} has been downloaded.`,
-                    detail: 'Click "Open Installer" to install the update manually. You may need to right-click the app and select "Open" to bypass Gatekeeper.',
-                    buttons: ['Open Installer', 'Later'],
-                    defaultId: 0,
-                    cancelId: 1
-                });
-                
-                if (result === 0) {
-                    // Open the DMG file
-                    shell.openPath(dmgPath);
-                }
-                return;
-            }
-        }
-        
-        // Fallback: If we can't find the DMG, use standard quit and install
-        const result = dialog.showMessageBoxSync({
-            type: 'info',
-            title: 'Update Ready',
-            message: `Peter Marker v${info.version} has been downloaded.`,
-            detail: 'Would you like to quit and install the update now?',
-            buttons: ['Quit and Install', 'Later'],
-            defaultId: 0,
-            cancelId: 1
+    // Windows only: macOS doesn't download, it links to GitHub
+    const result = dialog.showMessageBoxSync({
+        type: 'info',
+        title: 'Update Ready',
+        message: `Peter Marker v${info.version} has been downloaded and is ready to install.`,
+        detail: 'Would you like to quit and install the update now?',
+        buttons: ['Quit and Install', 'Later'],
+        defaultId: 0,
+        cancelId: 1
+    });
+    
+    if (result === 0) {
+        app.isQuitting = true;
+        setImmediate(() => {
+            app.removeAllListeners('window-all-closed');
+            autoUpdater.quitAndInstall(false, true);
         });
-        
-        if (result === 0) {
-            app.isQuitting = true;
-            setImmediate(() => {
-                app.removeAllListeners('window-all-closed');
-                autoUpdater.quitAndInstall(false, true);
-            });
-        }
-    } else {
-        // Windows: Install and restart immediately
-        const result = dialog.showMessageBoxSync({
-            type: 'info',
-            title: 'Update Ready',
-            message: `Peter Marker v${info.version} has been downloaded and is ready to install.`,
-            detail: 'Would you like to quit and install the update now?',
-            buttons: ['Quit and Install', 'Later'],
-            defaultId: 0,
-            cancelId: 1
-        });
-        
-        if (result === 0) {
-            app.isQuitting = true;
-            setImmediate(() => {
-                app.removeAllListeners('window-all-closed');
-                autoUpdater.quitAndInstall(false, true);
-            });
-        }
     }
 });
 
