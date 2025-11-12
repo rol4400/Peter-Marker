@@ -476,17 +476,24 @@ function toggleDrawing() {
         } else {
             // Show catch window when not drawing
             if (catchWindow) {
-                // Ensure catch window is on the correct display before showing
-                const targetDisplay = getTargetDisplay();
-                const { x, y, width, height } = targetDisplay.bounds;
-                catchWindow.setPosition(x + width - 100, y + height - 100);
-                
-                // On Windows, ensure window is clickable after showing
+                // On Windows, recreate window to ensure proper click handling and z-order
                 if (process.platform === 'win32') {
-                    catchWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+                    catchWindow.destroy();
+                    createCatchWindow();
+                    catchWindow.show();
+                    // Ensure it stays on top after recreation
+                    setTimeout(() => {
+                        if (catchWindow && !isDrawingEnabled) {
+                            catchWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+                        }
+                    }, 100);
+                } else {
+                    // macOS: just reposition and show
+                    const targetDisplay = getTargetDisplay();
+                    const { x, y, width, height } = targetDisplay.bounds;
+                    catchWindow.setPosition(x + width - 100, y + height - 100);
+                    catchWindow.show();
                 }
-                
-                catchWindow.show();
             }
             
             // When drawing is disabled, pass through clicks
@@ -537,17 +544,24 @@ ipcMain.on('close-drawing', () => {
         
         // Show catch window when closing
         if (catchWindow) {
-            // Ensure catch window is on the correct display before showing
-            const targetDisplay = getTargetDisplay();
-            const { x, y, width, height } = targetDisplay.bounds;
-            catchWindow.setPosition(x + width - 100, y + height - 100);
-            
-            // On Windows, ensure window is clickable after showing
+            // On Windows, recreate window to ensure proper click handling and z-order
             if (process.platform === 'win32') {
-                catchWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+                catchWindow.destroy();
+                createCatchWindow();
+                catchWindow.show();
+                // Ensure it stays on top after recreation
+                setTimeout(() => {
+                    if (catchWindow && !isDrawingEnabled) {
+                        catchWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+                    }
+                }, 100);
+            } else {
+                // macOS: just reposition and show
+                const targetDisplay = getTargetDisplay();
+                const { x, y, width, height } = targetDisplay.bounds;
+                catchWindow.setPosition(x + width - 100, y + height - 100);
+                catchWindow.show();
             }
-            
-            catchWindow.show();
         }
         
         if (mainWindow) {
