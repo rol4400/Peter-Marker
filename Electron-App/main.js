@@ -264,6 +264,8 @@ function updateWindowToDisplay(display) {
                 const wasVisible = catchWindow.isVisible();
                 catchWindow.destroy();
                 createCatchWindow();
+                // Ensure catch window is on the same display as main window
+                catchWindow.setPosition(x + width - 100, y + height - 100);
                 if (wasVisible) {
                     catchWindow.show();
                 }
