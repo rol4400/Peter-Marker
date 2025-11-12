@@ -481,6 +481,11 @@ function toggleDrawing() {
     
     if (mainWindow) {
         if (isDrawingEnabled) {
+            // Ensure main window is on the correct display before showing
+            const targetDisplay = getTargetDisplay();
+            const { x, y, width, height } = targetDisplay.bounds;
+            mainWindow.setBounds({ x, y, width, height });
+            
             // Hide catch window when drawing
             if (catchWindow) {
                 catchWindow.hide();
