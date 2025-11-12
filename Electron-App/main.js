@@ -480,6 +480,12 @@ function toggleDrawing() {
                 const targetDisplay = getTargetDisplay();
                 const { x, y, width, height } = targetDisplay.bounds;
                 catchWindow.setPosition(x + width - 100, y + height - 100);
+                
+                // On Windows, ensure window is clickable after showing
+                if (process.platform === 'win32') {
+                    catchWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+                }
+                
                 catchWindow.show();
             }
             
@@ -535,6 +541,12 @@ ipcMain.on('close-drawing', () => {
             const targetDisplay = getTargetDisplay();
             const { x, y, width, height } = targetDisplay.bounds;
             catchWindow.setPosition(x + width - 100, y + height - 100);
+            
+            // On Windows, ensure window is clickable after showing
+            if (process.platform === 'win32') {
+                catchWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+            }
+            
             catchWindow.show();
         }
         
