@@ -93,8 +93,8 @@ autoUpdater.autoDownload = false; // Prompt user before downloading
 autoUpdater.autoInstallOnAppQuit = false; // Install immediately after download
 
 function createWindow() {
-    // Get target display for initial window creation
-    const targetDisplay = getTargetDisplay();
+    // Get primary display for initial window creation
+    const primaryDisplay = screen.getPrimaryDisplay();
     
     mainWindow = new BrowserWindow({
         transparent: true,
@@ -121,8 +121,8 @@ function createWindow() {
     // Start as non-focusable so keys pass through initially
     mainWindow.setFocusable(false);
     
-    // Position window on the target display
-    const { x, y, width, height } = targetDisplay.bounds;
+    // Position window on the initial display (will follow mouse cursor after app is ready)
+    const { x, y, width, height } = primaryDisplay.bounds;
     mainWindow.setPosition(x, y);
     mainWindow.setSize(width, height);
     
@@ -149,7 +149,21 @@ function createWindow() {
 }
 
 function createCatchWindow() {
-    const targetDisplay = getTargetDisplay();
+    // Use locked display if set, otherwise follow cursor
+    let targetDisplay;
+    if (lockedDisplayId !== null) {
+        const displays = screen.getAllDisplays();
+        targetDisplay = displays.find(d => d.id === lockedDisplayId);
+        if (!targetDisplay) {
+            // Locked display not found, fall back to cursor
+            const cursorPoint = screen.getCursorScreenPoint();
+            targetDisplay = screen.getDisplayNearestPoint(cursorPoint);
+        }
+    } else {
+        // Auto mode: follow cursor
+        const cursorPoint = screen.getCursorScreenPoint();
+        targetDisplay = screen.getDisplayNearestPoint(cursorPoint);
+    }
     const { x: displayX, y: displayY, width: displayWidth, height: displayHeight } = targetDisplay.bounds;
     
     // Create a 100x100 window in bottom-right corner to catch clicks
@@ -212,7 +226,19 @@ function createCatchWindow() {
     
     // After content loads, reposition and force transparency refresh
     catchWindow.webContents.on('did-finish-load', () => {
-        const targetDisplay = getTargetDisplay();
+        // Use the same display logic as createCatchWindow
+        let targetDisplay;
+        if (lockedDisplayId !== null) {
+            const displays = screen.getAllDisplays();
+            targetDisplay = displays.find(d => d.id === lockedDisplayId);
+            if (!targetDisplay) {
+                const cursorPoint = screen.getCursorScreenPoint();
+                targetDisplay = screen.getDisplayNearestPoint(cursorPoint);
+            }
+        } else {
+            const cursorPoint = screen.getCursorScreenPoint();
+            targetDisplay = screen.getDisplayNearestPoint(cursorPoint);
+        }
         const { x, y, width, height } = targetDisplay.bounds;
         // Reposition after load to match the positioning logic used after open/close
         catchWindow.setPosition(x + width - 100, y + height - 100);
@@ -246,9 +272,20 @@ function createCatchWindow() {
 
 function updateWindowBounds() {
     if (mainWindow) {
-        // Get the target display (locked or cursor-based)
-        const targetDisplay = getTargetDisplay();
-        updateWindowToDisplay(targetDisplay);
+        // Only update if we're locked to a display
+        // In auto mode, let the mouse tracking handle it
+        if (lockedDisplayId !== null) {
+            const displays = screen.getAllDisplays();
+            const targetDisplay = displays.find(d => d.id === lockedDisplayId);
+            if (targetDisplay) {
+                updateWindowToDisplay(targetDisplay);
+            }
+        } else {
+            // Auto mode: get display at cursor position
+            const cursorPoint = screen.getCursorScreenPoint();
+            const currentDisplay = screen.getDisplayNearestPoint(cursorPoint);
+            updateWindowToDisplay(currentDisplay);
+        }
     }
 }
 
@@ -481,11 +518,6 @@ function toggleDrawing() {
     
     if (mainWindow) {
         if (isDrawingEnabled) {
-            // Ensure main window is on the correct display before showing
-            const targetDisplay = getTargetDisplay();
-            const { x, y, width, height } = targetDisplay.bounds;
-            mainWindow.setBounds({ x, y, width, height });
-            
             // Hide catch window when drawing
             if (catchWindow) {
                 catchWindow.hide();
@@ -907,10 +939,16 @@ app.whenReady().then(() => {
         console.log('Display metrics changed:', display.id, changedMetrics);
         updateTrayMenu(); // Refresh menu with updated resolution
         
-        // Update window bounds if this affects the target display
-        const targetDisplay = getTargetDisplay();
-        if (targetDisplay.id === display.id) {
+        // If locked to this display, update window bounds
+        if (lockedDisplayId === display.id) {
             updateWindowToDisplay(display);
+        } else if (lockedDisplayId === null) {
+            // In auto mode, update if this is the current display
+            const windowBounds = mainWindow.getBounds();
+            const windowDisplay = screen.getDisplayMatching(windowBounds);
+            if (windowDisplay.id === display.id) {
+                updateWindowToDisplay(display);
+            }
         }
     });
     
